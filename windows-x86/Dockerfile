@@ -4,12 +4,12 @@ RUN mkdir -p /build
 WORKDIR /build
 
 # Install Boost.System
-ENV BOOST_VERSION 1.62.0
-RUN curl -L http://sourceforge.net/projects/boost/files/boost/${BOOST_VERSION}/boost_`echo ${BOOST_VERSION} | sed 's/\\./_/g'`.tar.bz2/download | tar xj && \
+ENV BOOST_VERSION 1.63.0
+RUN curl -L https://sourceforge.net/projects/boost/files/boost/${BOOST_VERSION}/boost_`echo ${BOOST_VERSION} | sed 's/\\./_/g'`.tar.bz2/download | tar xj && \
     cd boost_`echo ${BOOST_VERSION} | sed 's/\\./_/g'`/ && \
     ./bootstrap.sh --prefix=${CROSS_ROOT} && \
     echo "using gcc : mingw32 : ${CROSS_TRIPLE}-c++ ;" > ${HOME}/user-config.jam && \
-    ./b2 --with-date_time --with-system --prefix=${CROSS_ROOT} toolset=gcc-mingw32 link=static variant=release threading=multi target-os=windows threadapi=win32 install 1>log 2>err && \
+    ./b2 --with-date_time --with-system --with-chrono --with-random --prefix=${CROSS_ROOT} cxxflags=-fPIC cflags=-fPIC toolset=gcc-mingw32 link=static variant=release threading=multi target-os=windows threadapi=win32 install 1>log 2>err && \
     rm -rf ${HOME}/user-config.jam && \
     rm -rf `pwd`
 
@@ -68,7 +68,7 @@ ENV PATH ${PATH}:/usr/local/go/bin
 # Install libtorrent
 # Changes:
 # - define WIN32, _UNICODE, IPV6_TCLASS=39
-ENV LIBTORRENT_VERSION 1.0.10
+ENV LIBTORRENT_VERSION 1.1.1
 RUN curl -L https://github.com/arvidn/libtorrent/archive/libtorrent-`echo ${LIBTORRENT_VERSION} | sed 's/\\./_/g'`.tar.gz | tar xz && \
     cd libtorrent-libtorrent-`echo ${LIBTORRENT_VERSION} | sed 's/\\./_/g'`/ && \
     ./autotool.sh && \
@@ -77,11 +77,10 @@ RUN curl -L https://github.com/arvidn/libtorrent/archive/libtorrent-`echo ${LIBT
     sed -i -e s/Windows.h/windows.h/ -e s/Wincrypt.h/wincrypt.h/ ./ed25519/src/seed.cpp && \
     \
     CC=${CROSS_TRIPLE}-cc CXX=${CROSS_TRIPLE}-c++ \
-    CFLAGS="${CFLAGS} -O2 -DUNICODE -D_UNICODE -DWIN32 -DIPV6_TCLASS=39" \
+    CFLAGS="${CFLAGS} -O2 -lmswsock -DUNICODE -D_UNICODE -DWIN32 -DWIN32_LEAN_AND_MEAN -DIPV6_TCLASS=39 -D_WIN32_WINNT=0x0501" \
     CXXFLAGS="${CXXFLAGS} ${CFLAGS}" \
     ./configure \
         --enable-static \
-        --disable-geoip \
         --disable-shared \
         --disable-deprecated-functions \
         --host=${CROSS_TRIPLE} \

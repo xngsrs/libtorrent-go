@@ -1,6 +1,8 @@
 %module libtorrent
 
 %{
+#include <boost/chrono.hpp>
+#include <libtorrent/time.hpp>
 #include <libtorrent/session.hpp>
 %}
 
@@ -8,8 +10,9 @@
 %include <stdint.i>
 %include <typemaps.i>
 
-#ifdef SWIGWIN
-    %include <windows.i>
+// Neither SWIGWIN or __MINGW32__ are working here...
+#ifdef __MINGW32__
+    %include "windows.i"
 #endif
 
 #define BOOST_POSIX_API
@@ -26,9 +29,14 @@ namespace boost {
 
 namespace libtorrent
 {
-    typedef int64_t size_type;
-    class ptime;
     class time_duration;
+
+    time_duration milliseconds(int64_t n) {
+        return boost::chrono::milliseconds(n);
+    }
+    time_duration seconds(int64_t n) {
+        return boost::chrono::seconds(n);
+    }
 }
 
 %rename("%(camelcase)s", %$isclass) "";
@@ -39,12 +47,15 @@ namespace libtorrent
 %rename("%(camelcase)s", %$isfunction) "";
 %rename("%(camelcase)s", %$isnamespace) "";
 
+%template(stdVectorInt) std::vector<int>;
+%template(stdVectorChar) std::vector<char>;
+%template(stdVectorSizeType) std::vector<long long>;
+%template(stdPairIntInt) std::pair<int, int>;
+%template(stdPairStringInt) std::pair<std::string, int>;
+
 // These are problematic, ignore them for now
-%ignore libtorrent::absolutetime_nodeprecate_;
 %ignore libtorrent::throw_invalid_handle;
-%ignore libtorrent::session::add_extension;
 %ignore libtorrent::web_seed_entry;
-%ignore libtorrent::boosttime_nodeprecate_;
 %ignore libtorrent::boosttime_deprecated_;
 
 %ignore libtorrent::time_now_string;
@@ -57,6 +68,7 @@ namespace libtorrent
 %ignore libtorrent::detail::get_file_attributes;
 %ignore libtorrent::log_time;
 %ignore libtorrent::parse_int;
+%ignore libtorrent::blockinfo::setpeer;
 
 %include <boost/preprocessor/cat.hpp>
 %include <boost/version.hpp>
@@ -72,25 +84,19 @@ namespace libtorrent
 %include <libtorrent/export.hpp>
 %include <libtorrent/version.hpp>
 %include <libtorrent/build_config.hpp>
-%include <libtorrent/size_type.hpp>
 %include <libtorrent/error_code.hpp>
 %include <libtorrent/error.hpp>
 
-%include <libtorrent/fingerprint.hpp>
 %include "bitfield.i"
 %include "socket.i"
 %include <libtorrent/address.hpp>
 %include "torrent_info.i"
+%include <libtorrent/settings_pack.hpp>
 %include <libtorrent/session_settings.hpp>
 %include "peer_info.i"
 %include "torrent_handle.i"
-%include <libtorrent/session_status.hpp>
 %include "add_torrent_params.i"
 %include "alert.i"
 %include "alert_types.i"
-%include <libtorrent/ptime.hpp>
-%include <libtorrent/time.hpp>
 %include "create_torrent.i"
-%include "dht.i"
 %include "session.i"
-%include "ed25519.i"
