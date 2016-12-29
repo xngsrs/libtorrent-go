@@ -38,6 +38,8 @@
 }
 %ignore libtorrent::partial_piece_info::blocks;
 %ignore libtorrent::hash_value;
+%ignore libtorrent::block_info::peer; // linux_arm
+%ignore libtorrent::block_info::set_peer; // linux_arm
 
 %include <libtorrent/entry.hpp>
 %include <libtorrent/torrent_info.hpp>
