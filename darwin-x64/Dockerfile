@@ -3,16 +3,30 @@ FROM cross-compiler:darwin-x64
 RUN mkdir -p /build
 WORKDIR /build
 
+# Fix Boost using wrong archiver / ignoring <archiver> flags
+# https://svn.boost.org/trac/boost/ticket/12573
+# https://github.com/boostorg/build/blob/develop/src/tools/clang-darwin.jam#L133
+RUN mv /usr/bin/ar /usr/bin/ar.orig && \
+    mv /usr/bin/strip /usr/bin/strip.orig && \
+    mv /usr/bin/ranlib /usr/bin/ranlib.orig && \
+    ln -sf ${CROSS_ROOT}/bin/${CROSS_TRIPLE}-ar /usr/bin/ar && \
+    ln -sf ${CROSS_ROOT}/bin/${CROSS_TRIPLE}-strip /usr/bin/strip && \
+    ln -sf ${CROSS_ROOT}/bin/${CROSS_TRIPLE}-ranlib /usr/bin/ranlib
+
 # Install Boost.System
 ENV BOOST_VERSION 1.63.0
 RUN curl -L https://sourceforge.net/projects/boost/files/boost/${BOOST_VERSION}/boost_`echo ${BOOST_VERSION} | sed 's/\\./_/g'`.tar.bz2/download | tar xj && \
     cd boost_`echo ${BOOST_VERSION} | sed 's/\\./_/g'`/ && \
-    ./bootstrap.sh --prefix=${CROSS_ROOT} && \
+    ./bootstrap.sh --prefix=${CROSS_ROOT} --with-toolset=clang && \
     echo "using clang : darwin : ${CROSS_TRIPLE}-c++ ;" > ${HOME}/user-config.jam && \
-    ./b2 --with-date_time --with-system --with-chrono --with-random --prefix=${CROSS_ROOT} cxxflags="-std=c++11 -stdlib=libc++" linkflags="-stdlib=libc++" toolset=clang-darwin link=static variant=release threading=multi target-os=darwin install 1>log 2>err && \
-    ${CROSS_TRIPLE}-ranlib ${CROSS_ROOT}/lib/*.a && \
+    ./b2 --with-date_time --with-system --with-chrono --with-random --prefix=${CROSS_ROOT} toolset=clang-darwin link=static variant=release threading=multi target-os=darwin install 1>log 2>err && \
     rm -rf ${HOME}/user-config.jam && \
     rm -rf `pwd`
+
+# Move back ar, strip and ranlib...
+RUN mv /usr/bin/ar.orig /usr/bin/ar && \
+    mv /usr/bin/strip.orig /usr/bin/strip && \
+    mv /usr/bin/ranlib.orig /usr/bin/ranlib
 
 # Install OpenSSL
 ENV OPENSSL_VERSION 1.0.2j
@@ -21,7 +35,6 @@ RUN curl -L https://www.openssl.org/source/openssl-${OPENSSL_VERSION}.tar.gz | t
     CROSS_COMPILE=${CROSS_TRIPLE}- ./Configure threads no-shared darwin64-x86_64-cc --prefix=${CROSS_ROOT} 1>log 2>err && \
     make 1>log 2>err && \
     make install 1>log 2>err && \
-    ${CROSS_TRIPLE}-ranlib ${CROSS_ROOT}/lib/*.a && \
     rm -rf `pwd`
 
 # Install SWIG
@@ -71,11 +84,10 @@ RUN curl -L https://github.com/arvidn/libtorrent/archive/libtorrent-`echo ${LIBT
     ./autotool.sh && \
     \
     sed -i 's/$PKG_CONFIG openssl --libs-only-/$PKG_CONFIG openssl --static --libs-only-/' ./configure && \
-    sed -i -e s/Windows.h/windows.h/ -e s/Wincrypt.h/wincrypt.h/ ./ed25519/src/seed.cpp && \
     \
     OSXCROSS_PKG_CONFIG_PATH=${CROSS_ROOT}/lib/pkgconfig/ \
     CC=${CROSS_TRIPLE}-cc CXX=${CROSS_TRIPLE}-c++ \
-    CFLAGS="${CFLAGS} -O2 -mmacosx-version-min=10.7" \
+    CFLAGS="${CFLAGS} -O2" \
     CXXFLAGS="${CXXFLAGS} ${CFLAGS} -O2" \
     ./configure \
         --enable-static \
@@ -86,7 +98,6 @@ RUN curl -L https://github.com/arvidn/libtorrent/archive/libtorrent-`echo ${LIBT
         --with-boost=${CROSS_ROOT} --with-boost-libdir=${CROSS_ROOT}/lib && \
     \
     make && make install && \
-    ${CROSS_TRIPLE}-ranlib ${CROSS_ROOT}/lib/*.a && \
     rm -rf `pwd`
 
 WORKDIR /
