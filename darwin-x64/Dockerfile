@@ -5,7 +5,7 @@ WORKDIR /build
 
 # Fix Boost using wrong archiver / ignoring <archiver> flags
 # https://svn.boost.org/trac/boost/ticket/12573
-# https://github.com/boostorg/build/blob/develop/src/tools/clang-darwin.jam#L133
+# https://github.com/boostorg/build/blob/boost-1.63.0/src/tools/clang-darwin.jam#L133
 RUN mv /usr/bin/ar /usr/bin/ar.orig && \
     mv /usr/bin/strip /usr/bin/strip.orig && \
     mv /usr/bin/ranlib /usr/bin/ranlib.orig && \
@@ -33,17 +33,17 @@ ENV OPENSSL_VERSION 1.0.2j
 RUN curl -L https://www.openssl.org/source/openssl-${OPENSSL_VERSION}.tar.gz | tar xz && \
     cd openssl-${OPENSSL_VERSION}/ && \
     CROSS_COMPILE=${CROSS_TRIPLE}- ./Configure threads no-shared darwin64-x86_64-cc --prefix=${CROSS_ROOT} 1>log 2>err && \
-    make 1>log 2>err && \
+    make -j $(cat /proc/cpuinfo | grep processor | wc -l) 1>log 2>err && \
     make install 1>log 2>err && \
     rm -rf `pwd`
 
 # Install SWIG
-ENV SWIG_VERSION 3.0.10
+ENV SWIG_VERSION 3.0.11
 RUN curl -L https://github.com/swig/swig/archive/rel-${SWIG_VERSION}.tar.gz | tar xz && \
     cd swig-rel-${SWIG_VERSION}/ && \
     ./autogen.sh && \
     ./configure 1>log 2>err && \
-    make 1>log 2>err && \
+    make -j $(cat /proc/cpuinfo | grep processor | wc -l) 1>log 2>err && \
     make install 1>log 2>err && \
     rm -rf `pwd`
 
@@ -97,7 +97,7 @@ RUN curl -L https://github.com/arvidn/libtorrent/archive/libtorrent-`echo ${LIBT
         --prefix=${CROSS_ROOT} \
         --with-boost=${CROSS_ROOT} --with-boost-libdir=${CROSS_ROOT}/lib && \
     \
-    make && make install && \
+    make -j $(cat /proc/cpuinfo | grep processor | wc -l) && make install && \
     rm -rf `pwd`
 
 WORKDIR /

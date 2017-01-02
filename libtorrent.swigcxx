@@ -1,19 +1,29 @@
 %module libtorrent
 
+#pragma SWIG nowarn=204 // CPP #warning, ""unknown OS, assuming BSD"", ""unknown platform, assuming the longest path is 255"".
+// Identifier 'GetCArray' redefined (ignored) (Renamed from 'get_c_array'), previous definition of 'GetCArray' (Renamed from 'get_c_array').
+#pragma SWIG nowarn=302
+#pragma SWIG nowarn=312 // Nested union not currently supported (ignored).
+#pragma SWIG nowarn=314 // 'range' is a Go keyword, renaming to 'Xrange'
+#pragma SWIG nowarn=315 // Nothing known about 'boost::asio::ip::tcp'.
+#pragma SWIG nowarn=317 // Specialization of non-template '<name>'.
+#pragma SWIG nowarn=319 // No access specifier given for base class 'boost::noncopyable' (ignored).
+#pragma SWIG nowarn=325 // Nested struct not currently supported (const_iterator ignored)
+#pragma SWIG nowarn=341 // The 'using' keyword in type aliasing is not fully supported yet.
+#pragma SWIG nowarn=401 // Nothing known about base class '<name>'. Ignored.
+#pragma SWIG nowarn=402 // Base class '<name>' is incomplete.
+#pragma SWIG nowarn=503 // Can't wrap 'Operator ...' unless renamed to a valid identifier.
+#pragma SWIG nowarn=516 // Overloaded method ... ignored, using ... instead.
+#pragma SWIG nowarn=890 // Ignoring '...' due to Go name ('...') conflict with '...'
+
 %{
 #include <boost/chrono.hpp>
 #include <libtorrent/time.hpp>
-#include <libtorrent/session.hpp>
 %}
 
 %include <stl.i>
 %include <stdint.i>
 %include <typemaps.i>
-
-// Neither SWIGWIN or __MINGW32__ are working here...
-#ifdef __MINGW32__
-    %include "windows.i"
-#endif
 
 #define BOOST_POSIX_API
 #define BOOST_NO_TYPEID
@@ -21,6 +31,12 @@
 
 namespace std {
     typedef int time_t;
+
+    %template(stdVectorInt) vector<int>;
+    %template(stdVectorChar) vector<char>;
+    %template(stdVectorSizeType) vector<long long>;
+    %template(stdPairIntInt) pair<int, int>;
+    %template(stdPairStringInt) pair<string, int>;
 }
 
 namespace boost {
@@ -47,12 +63,6 @@ namespace libtorrent
 %rename("%(camelcase)s", %$isfunction) "";
 %rename("%(camelcase)s", %$isnamespace) "";
 
-%template(stdVectorInt) std::vector<int>;
-%template(stdVectorChar) std::vector<char>;
-%template(stdVectorSizeType) std::vector<long long>;
-%template(stdPairIntInt) std::pair<int, int>;
-%template(stdPairStringInt) std::pair<std::string, int>;
-
 // These are problematic, ignore them for now
 %ignore libtorrent::throw_invalid_handle;
 %ignore libtorrent::web_seed_entry;
@@ -69,6 +79,11 @@ namespace libtorrent
 %ignore libtorrent::log_time;
 %ignore libtorrent::parse_int;
 %ignore libtorrent::blockinfo::setpeer;
+
+// Windows...
+%ignore libtorrent::file_status::block_special;
+%ignore libtorrent::file_status::link;
+%ignore libtorrent::file_status::socket;
 
 %include <boost/preprocessor/cat.hpp>
 %include <boost/version.hpp>

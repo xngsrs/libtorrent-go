@@ -23,6 +23,11 @@
 %ignore libtorrent::disk_io_thread::do_read_and_hash;
 %ignore libtorrent::disk_io_thread::do_resolve_links;
 
+// SWiG voodoo for Windows and the dreaded "'iovec' has not been declared"...
+namespace libtorrent {
+  namespace file {}
+}
+
 %include <libtorrent/performance_counters.hpp>
 %include <libtorrent/linked_list.hpp>
 %include <libtorrent/hasher.hpp>

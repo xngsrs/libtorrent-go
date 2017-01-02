@@ -18,17 +18,17 @@ ENV OPENSSL_VERSION 1.0.2j
 RUN curl -L https://www.openssl.org/source/openssl-${OPENSSL_VERSION}.tar.gz | tar xz && \
     cd openssl-${OPENSSL_VERSION}/ && \
     CROSS_COMPILE=${CROSS_TRIPLE}- ./Configure threads no-shared linux-armv4 --prefix=${CROSS_ROOT} 1>log 2>err && \
-    make 1>log 2>err && \
+    make -j $(cat /proc/cpuinfo | grep processor | wc -l) 1>log 2>err && \
     make install 1>log 2>err && \
     rm -rf `pwd`
 
 # Install SWIG
-ENV SWIG_VERSION 3.0.10
+ENV SWIG_VERSION 3.0.11
 RUN curl -L https://github.com/swig/swig/archive/rel-${SWIG_VERSION}.tar.gz | tar xz && \
     cd swig-rel-${SWIG_VERSION}/ && \
     ./autogen.sh && \
     ./configure && \
-    make 1>log 2>err && \
+    make -j $(cat /proc/cpuinfo | grep processor | wc -l) 1>log 2>err && \
     make install 1>log 2>err && \
     rm -rf `pwd`
 
@@ -83,7 +83,7 @@ RUN curl -L https://github.com/arvidn/libtorrent/archive/libtorrent-`echo ${LIBT
         --prefix=${CROSS_ROOT} \
         --with-boost=${CROSS_ROOT} --with-boost-libdir=${CROSS_ROOT}/lib && \
     \
-    make && make install && \
+    make -j $(cat /proc/cpuinfo | grep processor | wc -l) && make install && \
     rm -rf `pwd`
 
 WORKDIR /
