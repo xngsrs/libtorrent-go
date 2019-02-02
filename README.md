@@ -1,18 +1,17 @@
-libtorrent-go [![Build Status](https://travis-ci.org/scakemyer/libtorrent-go.svg?branch=master)](https://travis-ci.org/scakemyer/libtorrent-go)
+libtorrent-go 
 =============
 
 SWIG Go bindings for libtorrent-rasterbar
 
-Forked from <https://github.com/steeve/libtorrent-go>
+Forked from <https://github.com/steeve/libtorrent-go> and <https://github.com/scakemyer/libtorrent-go>
 
 
 Changes
 -------
 
-+ CamelCased identifier names
-+ peer_info support
-+ save and load resume_data support
-+ crashes on Android ARM fixed
++ Android NDK n19
++ GCC7
++ Latest MinGW
 
 
 Download and Build
@@ -27,8 +26,8 @@ Download and Build
 
 + Download libtorrent-go:
 
-        go get github.com/scakemyer/libtorrent-go
-        cd ~/go/src/github.com/scakemyer/libtorrent-go
+        go get github.com/ElementumOrg/libtorrent-go
+        cd ~/go/src/github.com/ElementumOrg/libtorrent-go
 
 * Pull the cross-compiler image for your platform:
 
@@ -46,9 +45,10 @@ Download and Build
 
 + Build libtorrent-go:
 
-        make [ android-arm | android-x86 | android-x64 |
-               linux-x86   | linux-x64   | linux-arm   | linux-armv7 | linux-arm64 |
-               windows-x86 | windows-x64 | darwin-x64  ]
+        make [ android-arm | android-arm64 | android-x86 | android-x64 |
+               linux-x86   | linux-x64   | linux-armv6   | linux-armv7 | linux-arm64 |
+               windows-x86 | windows-x64 | 
+               darwin-x64 (now disabled) | darwin-x86 (now disabled) ]
 
     To build libtorrent bindings for all platforms use `make` or specify needed platform, e.g. `make android-arm`.
     Built packages will be placed under `~/go/pkg/<platform>`
@@ -58,3 +58,4 @@ Thanks
 ------
 - [steeve](https://github.com/steeve) for his awesome work.
 - [dimitriss](https://github.com/dimitriss) for his great updates.
+- [scakemyer](https://github.com/scakemyer) for his huge work.

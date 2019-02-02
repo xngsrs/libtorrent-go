@@ -25,5 +25,5 @@ else ifneq ($(findstring aarch64, $(GCC_TARGET)),)
 else ifneq ($(findstring armv7, $(GCC_TARGET)),)
     TARGET_ARCH = armv7
 else ifneq ($(findstring arm, $(GCC_TARGET)),)
-    TARGET_ARCH = arm
+    TARGET_ARCH = armv6
 endif
