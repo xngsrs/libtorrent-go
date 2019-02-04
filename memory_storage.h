@@ -41,7 +41,7 @@ namespace libtorrent {
                 bool read;
                 int buffered = -1;
 
-                memory_piece(int i, int length) : index(i), length(length) {
+                memory_piece(int i, int length) : index(i), length(length), size(0) {
                         m_mutex = new mutex();
                         buffered = -1;
                 };
@@ -478,8 +478,10 @@ namespace libtorrent {
                                 printf("Restoring piece: %d \n", pi);
                         };
                         libtorrent::torrent* t = m_handle->native_handle().get();
+                        printf("Restoring piece2: %d \n", pi);
 
                         t->picker().reset_piece(pi);
+                        printf("Restoring piece3: %d \n", pi);
                 }
 
                 void enable_logging() {

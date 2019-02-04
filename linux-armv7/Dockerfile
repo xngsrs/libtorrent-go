@@ -71,6 +71,7 @@ RUN set -ex \
 ENV PATH ${PATH}:/usr/local/go/bin
 
 # Install libtorrent
+RUN echo "#define BOOST_SP_USE_PTHREADS" >> ${CROSS_ROOT}/include/boost/config/user.hpp
 RUN curl -L https://github.com/ElementumOrg/libtorrent/archive/`echo ${LIBTORRENT_VERSION} | sed 's/\\./_/g'`.tar.gz | tar xz && \
     cd libtorrent-`echo ${LIBTORRENT_VERSION} | sed 's/\\./_/g'`/ && \
     CC=${CROSS_TRIPLE}-gcc CXX=${CROSS_TRIPLE}-g++ \
