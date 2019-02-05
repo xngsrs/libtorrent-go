@@ -78,7 +78,9 @@ RUN curl -L https://github.com/ElementumOrg/libtorrent/archive/`echo ${LIBTORREN
     sed -i 's/$PKG_CONFIG openssl --libs-only-/$PKG_CONFIG openssl --static --libs-only-/' ./configure && \
     \
     CC=${CROSS_TRIPLE}-cc CXX=${CROSS_TRIPLE}-c++ \
-    CFLAGS="${CFLAGS} -Os -lmswsock -DUNICODE -D_UNICODE -DWIN32 -DWIN32_LEAN_AND_MEAN -DIPV6_TCLASS=39 -D_WIN32_WINNT=0x0501" \
+    # CFLAGS="${CFLAGS} -Os -lmswsock -DUNICODE -D_UNICODE -DWIN32 -DWIN32_LEAN_AND_MEAN -DIPV6_TCLASS=39 -D_WIN32_WINNT=0x0501" \
+    # CXXFLAGS="${CXXFLAGS} ${CFLAGS}" \
+    CFLAGS="${CFLAGS} -O2 -lmswsock -DUNICODE -D_UNICODE -DWIN32 -DWIN32_LEAN_AND_MEAN -DIPV6_TCLASS=39 -D_WIN32_WINNT=0x0501" \
     CXXFLAGS="${CXXFLAGS} ${CFLAGS}" \
     LIBS="-lmswsock" \
     ./configure \
@@ -93,16 +95,3 @@ RUN curl -L https://github.com/ElementumOrg/libtorrent/archive/`echo ${LIBTORREN
     rm -rf `pwd`
 
 WORKDIR /
-
-# Install CRoaring
-# ENV CROARING_VERSION 6154187fa18728039d757e0f959b120a526e2877
-# RUN curl -L https://github.com/RoaringBitmap/CRoaring/archive/`echo ${CROARING_VERSION} | sed 's/\\./_/g'`.tar.gz | tar xz && \
-#     cd CRoaring-`echo ${CROARING_VERSION} | sed 's/\\./_/g'`/ && \
-#     mkdir -p build && \
-#     cd build && \
-#     CXXFLAGS="${CXXFLAGS} ${CFLAGS} -Os -std=c++11" \
-#     cmake .. -DROARING_BUILD_STATIC=ON -DROARING_DISABLE_NATIVE=ON \
-#     -DCMAKE_C_COMPILER=${CROSS_TRIPLE}-cc -DCMAKE_CXX_COMPILER=${CROSS_TRIPLE}-c++ -DROARING_DISABLE_X64=ON && \
-#     make -j $(cat /proc/cpuinfo | grep processor | wc -l) 1>log && \
-#     make install 1>log && \
-#     rm -rf `pwd`

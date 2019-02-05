@@ -82,8 +82,10 @@ RUN curl -L https://github.com/ElementumOrg/libtorrent/archive/`echo ${LIBTORREN
     PKG_CONFIG_PATH=${CROSS_ROOT}/lib/pkgconfig/ \
     CC=${CROSS_TRIPLE}-gcc CXX=${CROSS_TRIPLE}-g++ \
     # CFLAGS="${CFLAGS} -Os -lmswsock -DUNICODE -D_UNICODE -DWIN32 -DWIN32_LEAN_AND_MEAN -DIPV6_TCLASS=39 -D_WIN32_WINNT=0x0600" \
-    CFLAGS="${CFLAGS} -Os -Wno-psabi -Wno-deprecated-declarations -Wno-sign-compare -Wno-unused-function -Wno-unused-parameter -std=c++11 -lmswsock -DUNICODE -D_UNICODE -DWIN32 -DWIN32_LEAN_AND_MEAN -DIPV6_TCLASS=39 -D_WIN32_WINNT=0x0600" \
-    CXXFLAGS="${CXXFLAGS} ${CFLAGS} -fno-strict-aliasing -fvisibility=hidden -DBOOST_ASIO_DISABLE_CONNECTEX -DBOOST_USE_WINAPI_VERSION=0x0600" \
+    # CFLAGS="${CFLAGS} -Os -Wno-psabi -Wno-deprecated-declarations -Wno-sign-compare -Wno-unused-function -Wno-unused-parameter -std=c++11 -lmswsock -DUNICODE -D_UNICODE -DWIN32 -DWIN32_LEAN_AND_MEAN -DIPV6_TCLASS=39 -D_WIN32_WINNT=0x0600" \
+    # CXXFLAGS="${CXXFLAGS} ${CFLAGS} -fno-strict-aliasing -fvisibility=hidden -DBOOST_ASIO_DISABLE_CONNECTEX -DBOOST_USE_WINAPI_VERSION=0x0600" \
+    CFLAGS="${CFLAGS} -O2 -lmswsock -DUNICODE -D_UNICODE -DWIN32 -DWIN32_LEAN_AND_MEAN -DIPV6_TCLASS=39 -D_WIN32_WINNT=0x0600" \
+    CXXFLAGS="${CXXFLAGS} ${CFLAGS}" \
     LIBS="-lmswsock" \
     ./configure \
         --enable-logging=no \

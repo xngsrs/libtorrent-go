@@ -76,7 +76,7 @@ RUN curl -L https://github.com/ElementumOrg/libtorrent/archive/`echo ${LIBTORREN
     cd libtorrent-`echo ${LIBTORRENT_VERSION} | sed 's/\\./_/g'`/ && \
     CC=${CROSS_TRIPLE}-gcc CXX=${CROSS_TRIPLE}-g++ \
     CFLAGS="${CFLAGS} -Os" \
-    CXXFLAGS="${CXXFLAGS} ${CFLAGS}" \
+    CXXFLAGS="${CXXFLAGS} ${CFLAGS} -g -ggdb" \
     ./autotool.sh && \
     \
     sed -i 's/$PKG_CONFIG openssl --libs-only-/$PKG_CONFIG openssl --static --libs-only-/' ./configure && \

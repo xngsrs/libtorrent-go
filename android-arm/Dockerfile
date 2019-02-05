@@ -36,7 +36,7 @@ RUN wget -q https://www.openssl.org/source/openssl-${OPENSSL_VERSION}.tar.gz -O 
     tar -xzf openssl.tar.gz && \
     rm openssl.tar.gz && \
     cd openssl-${OPENSSL_VERSION}/ && \
-    CROSS_COMPILE=${CROSS_TRIPLE}- ./Configure threads no-shared android-arm --prefix=${CROSS_ROOT} 1>log && \
+    CROSS_COMPILE=${CROSS_TRIPLE}- ./Configure threads no-shared linux-armv4 -march=armv7-a -mfpu=neon -fPIC --prefix=${CROSS_ROOT} 1>log && \
     make -j $(cat /proc/cpuinfo | grep processor | wc -l) 1>log && \
     make install 1>log && \
     rm -rf `pwd`
@@ -81,7 +81,7 @@ RUN curl -L https://github.com/ElementumOrg/libtorrent/archive/`echo ${LIBTORREN
     \
     CC=${CROSS_TRIPLE}-gcc CXX=${CROSS_TRIPLE}-g++ \
     CFLAGS="${CFLAGS} -O2 -fPIE -fPIC" \
-    CXXFLAGS="${CXXFLAGS} ${CFLAGS} -static-libstdc++ -O2 -fPIE -fPIC" \
+    CXXFLAGS="${CXXFLAGS} ${CFLAGS} -static-libstdc++ -O2 -fPIE -fPIC -march=armv7-a -mfpu=neon -std=c++11 -DANDROID -D__STDC_FORMAT_MACROS -fno-strict-aliasing -fvisibility=hidden -g -gdwarf-4 -fdebug-macro -ggdb" \
     ./configure \
         --enable-static \
         --disable-shared \

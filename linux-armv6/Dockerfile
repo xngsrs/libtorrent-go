@@ -85,7 +85,7 @@ RUN curl -L https://github.com/ElementumOrg/libtorrent/archive/`echo ${LIBTORREN
     \
     CC=${CROSS_TRIPLE}-gcc CXX=${CROSS_TRIPLE}-g++ \
     CFLAGS="${CFLAGS} -O2" \
-    CXXFLAGS="${CXXFLAGS} ${CFLAGS} -std=c++11" \
+    CXXFLAGS="${CXXFLAGS} ${CFLAGS} -std=c++11 -g -ggdb" \
     ./configure \
         --enable-static \
         --disable-shared \
