@@ -35,7 +35,7 @@ RUN wget -q https://www.openssl.org/source/openssl-${OPENSSL_VERSION}.tar.gz -O 
     tar -xzf openssl.tar.gz && \
     rm openssl.tar.gz && \
     cd openssl-${OPENSSL_VERSION}/ && \
-    PLATFORM=linux-armv4 CROSS_COMPILE=${CROSS_TRIPLE}- ./Configure threads no-shared linux-armv4 --prefix=${CROSS_ROOT} 1>log && \
+    PLATFORM=linux-armv4 CROSS_COMPILE=${CROSS_TRIPLE}- ./Configure threads no-shared linux-armv4 -fPIC --prefix=${CROSS_ROOT} 1>log && \
     make -j $(cat /proc/cpuinfo | grep processor | wc -l) 1>log && \
     make install 1>log && \
     rm -rf `pwd`
@@ -75,15 +75,15 @@ RUN echo "#define BOOST_SP_USE_PTHREADS" >> ${CROSS_ROOT}/include/boost/config/u
 RUN curl -L https://github.com/ElementumOrg/libtorrent/archive/`echo ${LIBTORRENT_VERSION} | sed 's/\\./_/g'`.tar.gz | tar xz && \
     cd libtorrent-`echo ${LIBTORRENT_VERSION} | sed 's/\\./_/g'`/ && \
     CC=${CROSS_TRIPLE}-gcc CXX=${CROSS_TRIPLE}-g++ \
-    CFLAGS="${CFLAGS} -Os" \
+    CFLAGS="${CFLAGS} -Os -O2 -fPIC" \
     CXXFLAGS="${CXXFLAGS} ${CFLAGS} -g -ggdb" \
     ./autotool.sh && \
     \
     sed -i 's/$PKG_CONFIG openssl --libs-only-/$PKG_CONFIG openssl --static --libs-only-/' ./configure && \
     \
     # CC=${CROSS_TRIPLE}-gcc CXX=${CROSS_TRIPLE}-g++ \
-    # CFLAGS="${CFLAGS} -Os" \
-    # CXXFLAGS="${CXXFLAGS} ${CFLAGS}" \
+    CFLAGS="${CFLAGS} -Os -O2 -fPIC" \
+    CXXFLAGS="${CXXFLAGS} ${CFLAGS}" \
     ./configure \
         --enable-static \
         --disable-shared \

@@ -126,6 +126,7 @@ namespace libtorrent {
                 torrent_info const& m_info;
                 libtorrent::torrent_handle* m_handle;
                 bool logging = false;
+                bool initialized = false;
 
                 memory_storage(storage_params const& params) : 
                         m_files(params.files), m_info(*params.info) {
@@ -138,6 +139,11 @@ namespace libtorrent {
 
                 void initialize(storage_error& ec) 
                 {
+                }
+
+                void set_memory_size(std::int64_t s) {
+                        capacity = s;
+
                         printf("Init with mem size %ld, Pieces: %d, Piece length: %d \n", 
                                 (long) memory_size, m_info.num_pieces(), m_info.piece_length());
 
@@ -164,6 +170,8 @@ namespace libtorrent {
 
                         readerPieces.resize(m_info.num_pieces());
                         reservedPieces.resize(m_info.num_pieces());
+
+                        initialized = true;
                 }
 
                 bool has_any_file() 
@@ -176,6 +184,8 @@ namespace libtorrent {
 
                 // char* read(int size, int piece, int offset) {
                 int read(char* read_buf, int size, int piece, int offset) {
+                        if (!initialized) return 0;
+
                         if (logging) {
                                 printf("Read start: %d, off: %d, size: %d \n", piece, offset, size);
                         };
@@ -214,6 +224,8 @@ namespace libtorrent {
                 int readv(libtorrent::file::iovec_t const* bufs, int num_bufs
                         , int piece, int offset, int flags, libtorrent::storage_error& ec)
                 {
+                        if (!initialized) return 0;
+
                         if (logging) {
                                 printf("Read piece: %d, off: %d \n", piece, offset);
                         };
@@ -246,6 +258,8 @@ namespace libtorrent {
                 int writev(libtorrent::file::iovec_t const* bufs, int num_bufs
                         , int piece, int offset, int flags, libtorrent::storage_error& ec)
                 {
+                        if (!initialized) return 0;
+
                         if (logging) {
                                 printf("Write Input: %d, off: %d, bufs: %d \n", piece, offset, bufs_size(bufs, num_bufs));
                         };
@@ -478,6 +492,8 @@ namespace libtorrent {
                                 printf("Restoring piece: %d \n", pi);
                         };
                         libtorrent::torrent* t = m_handle->native_handle().get();
+                        if (!t) return;
+
                         printf("Restoring piece2: %d \n", pi);
 
                         t->picker().reset_piece(pi);
@@ -493,6 +509,8 @@ namespace libtorrent {
                 }
 
                 void update_reader_pieces(std::vector<int> pieces) {
+                        if (!initialized) return;
+
                         readerPieces.reset();
                         for (auto i = pieces.begin(); i != pieces.end(); ++i) {
                                 readerPieces.set(*i);
@@ -500,6 +518,8 @@ namespace libtorrent {
                 };
 
                 void update_reserved_pieces(std::vector<int> pieces) {
+                        if (!initialized) return;
+
                         reservedPieces.reset();
                         for (auto i = pieces.begin(); i != pieces.end(); ++i) {
                                 reservedPieces.set(*i);
