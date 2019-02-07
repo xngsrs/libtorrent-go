@@ -129,26 +129,23 @@ namespace libtorrent {
                 bool initialized = false;
 
                 memory_storage(storage_params const& params) : 
-                        m_files(params.files), m_info(*params.info) {
+                        m_files(params.files), 
+                        m_info(*params.info) 
+                {
                         m_mutex = new mutex();
 
                         capacity = memory_size;
-                };
 
-                ~memory_storage() {};
-
-                void initialize(storage_error& ec) 
-                {
-                }
-
-                void set_memory_size(std::int64_t s) {
-                        capacity = s;
-
-                        printf("Init with mem size %ld, Pieces: %d, Piece length: %d \n", 
-                                (long) memory_size, m_info.num_pieces(), m_info.piece_length());
+                        std::cerr << "INFO Init with mem size " << memory_size << ", Pieces: " << m_info.num_pieces() <<
+                                ", Piece length: " << m_info.piece_length() << std::endl;
 
                         pieceCount = m_info.num_pieces();
                         pieceLength = m_info.piece_length();
+
+                        for (int i = 0; i < m_info.num_pieces(); i++) {
+                                int size = m_info.piece_size(i);
+                                pieces.push_back(memory_piece(i, size));
+                        }
 
                         // Using max possible buffers + 2
                         bufferSize = rint(ceil(capacity/pieceLength) + 2);
@@ -156,13 +153,7 @@ namespace libtorrent {
                                 bufferSize = pieceCount;
                         };
                         bufferLimit = bufferSize;
-
-                        printf("Using %d buffers \n", bufferSize);
-
-                        for (int i = 0; i < m_info.num_pieces(); i++) {
-                                int size = m_info.piece_size(i);
-                                pieces.push_back(memory_piece(i, size));
-                        }
+                        std::cerr << "INFO Using " << bufferSize << " buffers" << std::endl;
 
                         for (int i = 0; i < bufferSize; i++) {
                                 buffers.push_back(memory_buffer(i, pieceLength));
@@ -172,12 +163,41 @@ namespace libtorrent {
                         reservedPieces.resize(m_info.num_pieces());
 
                         initialized = true;
+                };
+
+                ~memory_storage() {};
+
+                void initialize(storage_error& ec) {}
+
+                void set_memory_size(std::int64_t s) {
+                        if (s <= capacity) return;
+
+                        mutex::scoped_lock l(*m_mutex);
+                        capacity = s;
+
+                        int oldBufferSize = bufferSize;
+                        // Using max possible buffers + 2
+                        bufferSize = rint(ceil(capacity/pieceLength) + 2);
+                        if (bufferSize > pieceCount) {
+                                bufferSize = pieceCount;
+                        };
+                        bufferLimit = bufferSize;
+                        if (oldBufferSize == bufferSize) {
+                                std::cerr << "INFO Not increasing buffer due to same size (" << bufferSize << ")" << std::endl;
+                                return;
+                        };
+
+                        std::cerr << "INFO Increasing buffer to " << bufferSize << " buffers" << std::endl;
+
+                        for (int i = oldBufferSize - 1; i < bufferSize; i++) {
+                                buffers.push_back(memory_buffer(i, pieceLength));
+                        }
                 }
 
                 bool has_any_file() 
                 { 
                         if (logging) {
-                                printf("Has \n");
+                                std::cerr << "INFO has_any_file" << std::endl;
                         };
                         return false; 
                 }
@@ -191,12 +211,12 @@ namespace libtorrent {
                         };
 
                         if (!getReadBuffer(&pieces[piece])) {
-                                printf("     nobuffer: %d, off: %d \n", piece, offset);
+                                std::cerr << "INFO nobuffer" << piece << ", off: " << offset << std::endl;
                                 restore_piece(piece);
                                 return -1;
                         };
                         if (pieces[piece].size < pieces[piece].length) {
-                                printf("     less: %d, off: %d, size: %d, length: %d \n", piece, offset, pieces[piece].size, pieces[piece].length);
+                                std::cerr << "INFO less: " << piece << ", off: " << offset << ", size: " << pieces[piece].size << ", length: " << pieces[piece].length << std::endl;
                                 restore_piece(piece);
                                 return -1;
                         };
@@ -231,7 +251,7 @@ namespace libtorrent {
                         };
 
                         if (!getReadBuffer(&pieces[piece])) {
-                                printf("Read fail no buffer: %d, off: %d \n", piece, offset);
+                                std::cerr << "INFO noreadbuffer" << piece << std::endl;
                                 return 0;
                         };
 
@@ -266,7 +286,7 @@ namespace libtorrent {
 
                         if (!getWriteBuffer(&pieces[piece])) {
                                 if (logging) {
-                                        printf("      no buffer: %d \n", piece);
+                                        std::cerr << "INFO nowritebuffer" << piece << std::endl;
                                 };
                                 return 0;
                         };
@@ -488,16 +508,12 @@ namespace libtorrent {
                 }
                 
                 void restore_piece(int pi) {
-                        if (logging) {
-                                printf("Restoring piece: %d \n", pi);
-                        };
+                        if (!m_handle) return;
                         libtorrent::torrent* t = m_handle->native_handle().get();
                         if (!t) return;
 
-                        printf("Restoring piece2: %d \n", pi);
-
+                        std::cerr << "INFO Restoring piece: " << pi << std::endl;
                         t->picker().reset_piece(pi);
-                        printf("Restoring piece3: %d \n", pi);
                 }
 
                 void enable_logging() {

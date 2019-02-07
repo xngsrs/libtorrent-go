@@ -75,14 +75,14 @@ RUN echo "#define BOOST_SP_USE_PTHREADS" >> ${CROSS_ROOT}/include/boost/config/u
 RUN curl -L https://github.com/ElementumOrg/libtorrent/archive/`echo ${LIBTORRENT_VERSION} | sed 's/\\./_/g'`.tar.gz | tar xz && \
     cd libtorrent-`echo ${LIBTORRENT_VERSION} | sed 's/\\./_/g'`/ && \
     CC=${CROSS_TRIPLE}-gcc CXX=${CROSS_TRIPLE}-g++ \
-    CFLAGS="${CFLAGS} -Os -O2 -fPIC" \
-    CXXFLAGS="${CXXFLAGS} ${CFLAGS} -g -ggdb" \
+    CFLAGS="${CFLAGS} -O2 -fPIC" \
+    CXXFLAGS="${CXXFLAGS} ${CFLAGS}" \
     ./autotool.sh && \
     \
     sed -i 's/$PKG_CONFIG openssl --libs-only-/$PKG_CONFIG openssl --static --libs-only-/' ./configure && \
     \
     # CC=${CROSS_TRIPLE}-gcc CXX=${CROSS_TRIPLE}-g++ \
-    CFLAGS="${CFLAGS} -Os -O2 -fPIC" \
+    CFLAGS="${CFLAGS} -O2 -fPIC" \
     CXXFLAGS="${CXXFLAGS} ${CFLAGS}" \
     ./configure \
         --enable-static \
