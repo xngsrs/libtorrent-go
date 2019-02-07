@@ -53,7 +53,7 @@ namespace libtorrent {
                 void reset() {
                         mutex::scoped_lock l(*m_mutex);
 
-                        printf("Freeing piece %d, buffer: %d \n", index, buffered);
+                        printf("Freeing buffer %d, piece: %d \n", buffered, index);
 
                         buffered = -1;
                         completed = false;
@@ -159,8 +159,8 @@ namespace libtorrent {
                                 buffers.push_back(memory_buffer(i, pieceLength));
                         }
 
-                        readerPieces.resize(m_info.num_pieces());
-                        reservedPieces.resize(m_info.num_pieces());
+                        readerPieces.resize(m_info.num_pieces()+50);
+                        reservedPieces.resize(m_info.num_pieces()+50);
 
                         initialized = true;
                 };
@@ -452,6 +452,7 @@ namespace libtorrent {
                                 if (logging) {
                                         printf("Trimming %d to %d \n", bufferUsed, bufferLimit);
                                 };
+
                                 if (!readerPieces.empty()) {
                                         int minIndex = 0;
                                         std::chrono::milliseconds minTime;
@@ -465,6 +466,7 @@ namespace libtorrent {
                                         };
 
                                         if (minIndex > 0) {
+                                                std::cerr << "INFO Removing non-read piece: " << minIndex << std::endl;
                                                 removePiece(minIndex);
                                                 continue;
                                         };
@@ -482,6 +484,7 @@ namespace libtorrent {
                                 };
 
                                 if (minIndex > 0) {
+                                        std::cerr << "INFO Removing LRU piece: " << minIndex << std::endl;
                                         removePiece(minIndex);
                                         continue;
                                 };
