@@ -35,7 +35,10 @@ RUN wget -q https://www.openssl.org/source/openssl-${OPENSSL_VERSION}.tar.gz -O 
     tar -xzf openssl.tar.gz && \
     rm openssl.tar.gz && \
     cd openssl-${OPENSSL_VERSION}/ && \
-    PLATFORM=linux-armv4 CROSS_COMPILE=${CROSS_TRIPLE}- ./Configure threads no-shared linux-armv4 -fPIC --prefix=${CROSS_ROOT} 1>log && \
+    PLATFORM=linux-armv4 CROSS_COMPILE=${CROSS_TRIPLE}- ./Configure threads no-shared linux-armv4 \
+    -march=armv7-a -mfpu=neon -fPIC \
+    no-afalgeng no-async no-autoalginit no-autoerrinit no-capieng no-cms no-comp no-deprecated no-dgram no-dso no-dtls no-dynamic-engine no-egd no-engine no-err no-filenames no-gost no-hw no-makedepend no-multiblock no-nextprotoneg no-posix-io no-psk no-rdrand no-sctp no-shared no-sock no-srp no-srtp no-static-engine no-stdio no-threads no-ui-console no-zlib no-zlib-dynamic -fno-strict-aliasing -fvisibility=hidden -Os\
+    --prefix=${CROSS_ROOT} 1>log && \
     make -j $(cat /proc/cpuinfo | grep processor | wc -l) 1>log && \
     make install 1>log && \
     rm -rf `pwd`
