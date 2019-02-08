@@ -11,6 +11,8 @@ ENV CXXFLAGS="${CXXFLAGS} -std=c++11" \
     \
     OPENSSL_VERSION=1.1.1a \
     OPENSSL_SHA256=fc20130f8b7cbd2fb918b2f14e2f429e109c31ddd0fb38fc5d71d9ffed3f9f41 \
+    OPENSSL_NOOPTS="no-afalgeng no-async no-autoalginit no-autoerrinit no-capieng no-cms no-comp no-deprecated no-dgram no-dso no-dtls no-dynamic-engine no-egd no-engine no-err no-filenames no-gost no-hw no-makedepend no-multiblock no-nextprotoneg no-posix-io no-psk no-rdrand no-sctp no-shared no-sock no-srp no-srtp no-static-engine no-stdio no-threads no-ui-console no-zlib no-zlib-dynamic -fno-strict-aliasing -fvisibility=hidden -Os" \
+    OPENSSL_OPTS="threads no-shared linux-aarch64 -fPIC" \
     \
     SWIG_VERSION=3.0.12 \
     \
@@ -36,8 +38,7 @@ RUN wget -q https://www.openssl.org/source/openssl-${OPENSSL_VERSION}.tar.gz -O 
     tar -xzf openssl.tar.gz && \
     rm openssl.tar.gz && \
     cd openssl-${OPENSSL_VERSION}/ && \
-    # CROSS_COMPILE=${CROSS_TRIPLE}- ./Configure threads no-shared android-arm64 --prefix=${CROSS_ROOT} 1>log && \
-    CROSS_COMPILE=${CROSS_TRIPLE}- ./Configure threads no-shared android-arm64 -fPIC --prefix=${CROSS_ROOT} 1>log && \
+    CROSS_COMPILE=${CROSS_TRIPLE}- ./Configure ${OPENSSL_OPTS} ${OPENSSL_NOOPTS} --prefix=${CROSS_ROOT} 1>log && \
     make -j $(cat /proc/cpuinfo | grep processor | wc -l) 1>log && \
     make install 1>log && \
     rm -rf `pwd`
