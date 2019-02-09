@@ -51,8 +51,6 @@ namespace libtorrent {
                 };
 
                 void reset() {
-                        mutex::scoped_lock l(*m_mutex);
-
                         printf("Freeing buffer %d, piece: %d \n", buffered, index);
 
                         buffered = -1;
@@ -93,7 +91,9 @@ namespace libtorrent {
                 };
 
                 void reset() {
-                        mutex::scoped_lock l(*m_mutex);
+                        accessed = std::chrono::duration_cast< std::chrono::milliseconds >(
+                                std::chrono::system_clock::now().time_since_epoch()
+                        );
 
                         printf("Freeing buffer %d, piece: %d \n", index, pi);
 
@@ -125,6 +125,7 @@ namespace libtorrent {
                 file_storage const* m_files;
                 torrent_info const& m_info;
                 libtorrent::torrent_handle* m_handle;
+
                 bool logging = false;
                 bool initialized = false;
 
@@ -455,6 +456,7 @@ namespace libtorrent {
 
                                 if (!readerPieces.empty()) {
                                         int minIndex = 0;
+                                        int bufferIndex = 0;
                                         std::chrono::milliseconds minTime;
 
                                         for (auto it = buffers.begin(); it != buffers.end(); ++it) 
@@ -462,17 +464,19 @@ namespace libtorrent {
                                                 if (it->used && it->assigned() && !it->reserved(&reservedPieces) && !it->readed(&readerPieces) && (minIndex == 0 || it->accessed < minTime)) {
                                                         minIndex = it->pi;
                                                         minTime = it->accessed;
+                                                        bufferIndex = it->index;
                                                 };
                                         };
 
                                         if (minIndex > 0) {
                                                 std::cerr << "INFO Removing non-read piece: " << minIndex << std::endl;
-                                                removePiece(minIndex);
+                                                removePiece(minIndex, bufferIndex);
                                                 continue;
                                         };
                                 }
 
                                 int minIndex = 0;
+                                int bufferIndex = 0;
                                 std::chrono::milliseconds minTime;
 
                                 for (auto it = buffers.begin(); it != buffers.end(); ++it)
@@ -480,38 +484,44 @@ namespace libtorrent {
                                         if (it->used && it->assigned() && !it->reserved(&reservedPieces) && (minIndex == 0 || it->accessed < minTime)) {
                                                 minIndex = it->pi;
                                                 minTime = it->accessed;
+                                                bufferIndex = it->index;
                                         }
                                 };
 
                                 if (minIndex > 0) {
                                         std::cerr << "INFO Removing LRU piece: " << minIndex << std::endl;
-                                        removePiece(minIndex);
+                                        removePiece(minIndex, bufferIndex);
                                         continue;
                                 };
                         }
 
                 };
 
-                void removePiece(int pi) {
+                void removePiece(int pi, int bi) {
+                        mutex::scoped_lock l(*m_mutex);
+                                        
                         // Don't allow to delete reserved pieces
-                        if (!pieces[pi].isBuffered() || buffers[pieces[pi].buffered].reserved(&reservedPieces)) {
-                                return;
-                        }
+                        if (!pieces[pi].isBuffered()) {
+                                buffers[bi].reset();
+                                bufferUsed--;
 
-                        if (logging) {
-                                printf("Removing piece %d, buffer: %d \n", pi, pieces[pi].buffered);
+                                return;
                         };
 
-                        buffers[pieces[pi].buffered].reset();
+                        if (logging) {
+                                printf("Removing piece %d, buffer: %d \n", pi, bi);
+                        };
+
+                        buffers[bi].reset();
                         pieces[pi].reset();
-
+                        
                         bufferUsed--;
-
                         restore_piece(pi);
                 }
                 
                 void restore_piece(int pi) {
                         if (!m_handle) return;
+
                         libtorrent::torrent* t = m_handle->native_handle().get();
                         if (!t) return;
 
