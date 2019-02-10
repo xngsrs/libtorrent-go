@@ -498,8 +498,6 @@ namespace libtorrent {
                 };
 
                 void removePiece(int pi, int bi) {
-                        mutex::scoped_lock l(*m_mutex);
-                                        
                         // Don't allow to delete reserved pieces
                         if (!pieces[pi].isBuffered()) {
                                 buffers[bi].reset();
