@@ -25,7 +25,7 @@ ENV CXXFLAGS="${CXXFLAGS} -std=c++11" \
     LIBTORRENT_VERSION=5f715acda6da898cda71012472663c9adaa5a163
 
 # Install Boost.System
-RUN curl -L https://dl.bintray.com/boostorg/release/${BOOST_VERSION}/source/boost_`echo ${BOOST_VERSION} | sed 's/\\./_/g'`.tar.bz2 | tar xvj && \
+RUN curl -L https://dl.bintray.com/boostorg/release/${BOOST_VERSION}/source/boost_`echo ${BOOST_VERSION} | sed 's/\\./_/g'`.tar.bz2 | tar xvj 1>log && \
     cd boost_`echo ${BOOST_VERSION} | sed 's/\\./_/g'`/ && \
     ./bootstrap.sh --prefix=${CROSS_ROOT} && \
     echo "using clang : android : ${CROSS_TRIPLE}-clang++ ;" > ${HOME}/user-config.jam && \
@@ -84,8 +84,6 @@ RUN curl -L https://github.com/ElementumOrg/libtorrent/archive/`echo ${LIBTORREN
     CC=${CROSS_TRIPLE}-gcc CXX=${CROSS_TRIPLE}-g++ \
     # CFLAGS="${CFLAGS} -Os -fPIE -fPIC" \
     # CXXFLAGS="${CXXFLAGS} ${CFLAGS} -static-libstdc++" \
-    # CFLAGS="${CFLAGS} -O2 -fPIE -fPIC" \
-    # CXXFLAGS="${CXXFLAGS} ${CFLAGS} -static-libstdc++ -O2 -fPIE -fPIC -march=armv8-a+crc -std=c++11 -DANDROID -fno-strict-aliasing -fvisibility=hidden -g -gdwarf-4 -fdebug-macro -ggdb" \
     CFLAGS="${CFLAGS} -O2 -fPIC -fPIE -DINT64_MAX=0x7fffffffffffffffLL -DINT16_MAX=32767 -DINT16_MIN=-32768 -DTORRENT_PRODUCTION_ASSERTS" \
     CXXFLAGS="${CXXFLAGS} ${CFLAGS} -static-libstdc++" \
     ./configure \

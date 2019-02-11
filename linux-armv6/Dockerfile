@@ -28,11 +28,11 @@ RUN dpkg --add-architecture i386 && \
     apt-get install -y libc6-dev:i386 libstdc++6:i386 libgcc1:i386 zlib1g:i386
 
 # Install Boost.System
-RUN curl -L https://dl.bintray.com/boostorg/release/${BOOST_VERSION}/source/boost_`echo ${BOOST_VERSION} | sed 's/\\./_/g'`.tar.bz2 | tar xvj && \
+RUN curl -L https://dl.bintray.com/boostorg/release/${BOOST_VERSION}/source/boost_`echo ${BOOST_VERSION} | sed 's/\\./_/g'`.tar.bz2 | tar xvj 1>log && \
     cd boost_`echo ${BOOST_VERSION} | sed 's/\\./_/g'`/ && \
     ./bootstrap.sh --prefix=${CROSS_ROOT} && \
-    echo "using gcc : linux : ${CROSS_TRIPLE}-c++ ;" > ${HOME}/user-config.jam && \
-    ./b2 --with-date_time --with-system --with-chrono --with-random --prefix=${CROSS_ROOT} cxxflags=-fPIC cflags=-fPIC toolset=gcc-linux link=static variant=release threading=multi target-os=linux install 1>log 2>err && \
+    echo "using gcc : linux : ${CROSS_TRIPLE}-g++ ;" > ${HOME}/user-config.jam && \
+    ./b2 --with-date_time --with-system --with-chrono --with-random --prefix=${CROSS_ROOT} cxxflags=-fPIC cflags=-fPIC toolset=gcc-linux link=static variant=release threading=multi target-os=linux install && \
     rm -rf ${HOME}/user-config.jam && \
     rm -rf `pwd`
 
@@ -73,7 +73,7 @@ RUN set -ex \
   && cd /usr/local/go/src \
   && ./make.bash 1>golang.log \
   \
-  && CC_FOR_TARGET=${CROSS_TRIPLE}-cc CXX_FOR_TARGET=${CROSS_TRIPLE}-c++ GOOS=linux GOARCH=arm GOARM=6 CGO_ENABLED=1 ./make.bash --no-clean \
+  && CC_FOR_TARGET=${CROSS_TRIPLE}-gcc CXX_FOR_TARGET=${CROSS_TRIPLE}-g++ GOOS=linux GOARCH=arm GOARM=6 CGO_ENABLED=1 ./make.bash --no-clean \
   && rm -rf /usr/local/bootstrap /usr/local/go/pkg/bootstrap
 ENV PATH ${PATH}:/usr/local/go/bin
 
@@ -81,11 +81,14 @@ ENV PATH ${PATH}:/usr/local/go/bin
 RUN echo "#define BOOST_SP_USE_PTHREADS" >> ${CROSS_ROOT}/include/boost/config/user.hpp
 RUN curl -L https://github.com/ElementumOrg/libtorrent/archive/`echo ${LIBTORRENT_VERSION} | sed 's/\\./_/g'`.tar.gz | tar xz && \
     cd libtorrent-`echo ${LIBTORRENT_VERSION} | sed 's/\\./_/g'`/ && \
+    CC=${CROSS_TRIPLE}-gcc CXX=${CROSS_TRIPLE}-g++ \
+    CFLAGS="${CFLAGS} -O2 -fPIC" \
+    CXXFLAGS="${CXXFLAGS} ${CFLAGS}" \
     ./autotool.sh && \
     \
     sed -i 's/$PKG_CONFIG openssl --libs-only-/$PKG_CONFIG openssl --static --libs-only-/' ./configure && \
     \
-    CC=${CROSS_TRIPLE}-gcc CXX=${CROSS_TRIPLE}-g++ \
+    # CC=${CROSS_TRIPLE}-gcc CXX=${CROSS_TRIPLE}-g++ \
     CFLAGS="${CFLAGS} -O2 -fPIC" \
     CXXFLAGS="${CXXFLAGS} ${CFLAGS}" \
     ./configure \

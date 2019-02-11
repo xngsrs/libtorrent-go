@@ -25,7 +25,7 @@ ENV CXXFLAGS="${CXXFLAGS} -std=c++11" \
     LIBTORRENT_VERSION=5f715acda6da898cda71012472663c9adaa5a163
 
 # Install Boost.System
-RUN curl -L https://dl.bintray.com/boostorg/release/${BOOST_VERSION}/source/boost_`echo ${BOOST_VERSION} | sed 's/\\./_/g'`.tar.bz2 | tar xvj && \
+RUN curl -L https://dl.bintray.com/boostorg/release/${BOOST_VERSION}/source/boost_`echo ${BOOST_VERSION} | sed 's/\\./_/g'`.tar.bz2 | tar xvj 1>log && \
     cd boost_`echo ${BOOST_VERSION} | sed 's/\\./_/g'`/ && \
     ./bootstrap.sh --prefix=${CROSS_ROOT} && \
     echo "using clang : android : ${CROSS_TRIPLE}-clang++ ;" > ${HOME}/user-config.jam && \
