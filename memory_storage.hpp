@@ -120,6 +120,7 @@ namespace libtorrent {
 
                 bool is_logging = false;
                 bool is_initialized = false;
+                bool is_reading = false;
 
                 memory_storage(storage_params const& params) {
                         m_files = params.files;
@@ -192,9 +193,9 @@ namespace libtorrent {
                 //         return false; 
                 // }
 
-                // char* read(int size, int piece, int offset) {
                 int read(char* read_buf, int size, int piece, int offset) {
                         if (!is_initialized) return 0;
+                        is_reading = true;
 
                         if (is_logging) {
                                 printf("Read start: %d, off: %d, size: %d \n", piece, offset, size);
@@ -388,6 +389,9 @@ namespace libtorrent {
                         // Once again checking in case we had multiple writes in parallel
                         if (p->is_buffered()) return true;
 
+                        // Check if piece is not in reader ranges and avoid allocation
+                        if (is_reading && !is_readered(p->index)) return false;
+
                         for (int i = 0; i < buffer_size; i++) {
                                 if (buffers[i].is_used) {
                                         continue;
@@ -408,7 +412,6 @@ namespace libtorrent {
                                 // to propely check for the usage.
                                 if (reserved_pieces.test(p->index)) {
                                         buffer_limit--;
-                                        buffer_reserved++;
                                 } else {
                                         buffer_used++;
                                 };
@@ -427,7 +430,7 @@ namespace libtorrent {
                         boost::unique_lock<boost::mutex> scoped_lock(m_mutex);
 
                         while (buffer_used >= buffer_limit) {
-                                std::cerr << "INFO Trimming " << buffer_used << " to " << buffer_limit << " with reserved " << buffer_reserved << std::endl;
+                                std::cerr << "INFO Trimming " << buffer_used << " to " << buffer_limit << " with reserved " << buffer_reserved << ", " << get_buffer_info() << std::endl;
 
                                 if (!reader_pieces.empty()) {
                                         int bi = find_last_buffer(true);
@@ -436,24 +439,6 @@ namespace libtorrent {
                                                 remove_piece(bi);
                                                 continue;
                                         }
-                                        // int minIndex = -1;
-                                        // int bufferIndex = -1;
-                                        // std::chrono::milliseconds minTime = now();
-
-                                        // for (auto it = buffers.begin(); it != buffers.end(); ++it) 
-                                        // {
-                                        //         if (it->is_used && it->is_assigned() && !it->reserved(&reservedPieces) && !it->readed(&readerPieces) && it->accessed <= minTime) {
-                                        //                 minIndex = it->pi;
-                                        //                 minTime = it->accessed;
-                                        //                 bufferIndex = it->index;
-                                        //         };
-                                        // };
-
-                                        // if (minIndex > 0) {
-                                        //         std::cerr << "INFO Removing non-read piece: " << minIndex << ", buffer:" << bufferIndex << std::endl;
-                                        //         removePiece(minIndex, bufferIndex);
-                                        //         continue;
-                                        // };
                                 }
 
                                 int bi = find_last_buffer(false);
@@ -462,28 +447,20 @@ namespace libtorrent {
                                         remove_piece(bi);
                                         continue;
                                 }
-
-                                // int minIndex = -1;
-                                // int bufferIndex = -1;
-                                // std::chrono::milliseconds minTime = std::chrono::duration_cast< std::chrono::milliseconds >(
-                                //         std::chrono::system_clock::now().time_since_epoch()
-                                // );
-
-                                // for (auto it = buffers.begin(); it != buffers.end(); ++it)
-                                // {
-                                //         if (it->used && it->is_assigned() && !it->reserved(&reservedPieces) && it->accessed <= minTime) {
-                                //                 minIndex = it->pi;
-                                //                 minTime = it->accessed;
-                                //                 bufferIndex = it->index;
-                                //         }
-                                // };
-
-                                // if (minIndex > 0) {
-                                //         std::cerr << "INFO Removing LRU piece: " << minIndex << ", buffer:" << bufferIndex << std::endl;
-                                //         remove_piece(minIndex, bufferIndex);
-                                //         continue;
-                                // };
                         }
+                };
+
+                std::string get_buffer_info() {
+                        std::string result = "";
+                        
+                        for (auto it = buffers.begin(); it != buffers.end(); ++it) 
+                        {
+                                if (!result.empty()) result += " ";
+
+                                result += std::to_string(it->index) + ":" + std::to_string(it->pi);
+                        };
+
+                        return result;
                 };
 
                 int find_last_buffer(bool check_read) {
@@ -522,7 +499,8 @@ namespace libtorrent {
                         if (!t) return;
 
                         std::cerr << "INFO Restoring piece: " << pi << std::endl;
-                        t->picker().reset_piece(pi);
+                        // t->picker().reset_piece(pi);
+                        t->picker().we_dont_have(pi);
                 }
 
                 void enable_logging() {
@@ -536,6 +514,7 @@ namespace libtorrent {
                 void update_reader_pieces(std::vector<int> pieces) {
                         if (!is_initialized) return;
 
+                        boost::unique_lock<boost::mutex> scoped_lock(m_mutex);
                         reader_pieces.reset();
                         for (auto i = pieces.begin(); i != pieces.end(); ++i) {
                                 reader_pieces.set(*i);
@@ -545,9 +524,12 @@ namespace libtorrent {
                 void update_reserved_pieces(std::vector<int> pieces) {
                         if (!is_initialized) return;
 
+                        boost::unique_lock<boost::mutex> scoped_lock(m_mutex);
+                        buffer_reserved = 0;
                         reserved_pieces.reset();
                         for (auto i = pieces.begin(); i != pieces.end(); ++i) {
                                 reserved_pieces.set(*i);
+                                buffer_reserved++;
                         };
                 };
 
