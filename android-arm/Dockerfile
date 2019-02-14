@@ -84,7 +84,8 @@ RUN curl -L https://github.com/ElementumOrg/libtorrent/archive/`echo ${LIBTORREN
     CC=${CROSS_TRIPLE}-gcc CXX=${CROSS_TRIPLE}-g++ \
     # CFLAGS="${CFLAGS} -O2 -fPIE -fPIC" \
     # CXXFLAGS="${CXXFLAGS} ${CFLAGS} -static-libstdc++ -O2 -fPIE -fPIC -march=armv7-a -mfpu=neon -std=c++11 -DANDROID -D__STDC_FORMAT_MACROS -fno-strict-aliasing -fvisibility=hidden -g -gdwarf-4 -fdebug-macro -ggdb" \
-    CFLAGS="${CFLAGS} -O2 -fPIC -fPIE -DINT64_MAX=0x7fffffffffffffffLL -DINT16_MAX=32767 -DINT16_MIN=-32768 -DTORRENT_PRODUCTION_ASSERTS" \
+    # CFLAGS="${CFLAGS} -O2 -fPIC -fPIE -DINT64_MAX=0x7fffffffffffffffLL -DINT16_MAX=32767 -DINT16_MIN=-32768 -DTORRENT_PRODUCTION_ASSERTS" \
+    CFLAGS="${CFLAGS} -O2 -fPIC -fPIE" \
     CXXFLAGS="${CXXFLAGS} ${CFLAGS} -static-libstdc++" \
     ./configure \
         --enable-static \

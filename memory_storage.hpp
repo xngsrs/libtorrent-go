@@ -295,7 +295,7 @@ namespace libtorrent {
                         buffers[pieces[piece].bi].accessed = now();
 
                         if (buffer_used >= buffer_limit) {
-                                trim();
+                                trim(piece);
                         }
 
                         return n;
@@ -422,7 +422,7 @@ namespace libtorrent {
                         return p->is_buffered();
                 };
 
-                void trim() {
+                void trim(int pi) {
                         if (capacity < 0 || buffer_used < buffer_limit) {
                                 return;
                         };
@@ -433,7 +433,7 @@ namespace libtorrent {
                                 std::cerr << "INFO Trimming " << buffer_used << " to " << buffer_limit << " with reserved " << buffer_reserved << ", " << get_buffer_info() << std::endl;
 
                                 if (!reader_pieces.empty()) {
-                                        int bi = find_last_buffer(true);
+                                        int bi = find_last_buffer(pi, true);
                                         if (bi != -1) {
                                                 std::cerr << "INFO Removing non-read piece: " << buffers[bi].pi << ", buffer:" << bi << std::endl;
                                                 remove_piece(bi);
@@ -441,7 +441,7 @@ namespace libtorrent {
                                         }
                                 }
 
-                                int bi = find_last_buffer(false);
+                                int bi = find_last_buffer(pi, false);
                                 if (bi != -1) {
                                         std::cerr << "INFO Removing LRU piece: " << buffers[bi].pi << ", buffer:" << bi << std::endl;
                                         remove_piece(bi);
@@ -463,7 +463,7 @@ namespace libtorrent {
                         return result;
                 };
 
-                int find_last_buffer(bool check_read) {
+                int find_last_buffer(int pi, bool check_read) {
                         int bi = -1;
                         std::chrono::milliseconds minTime = now();
 
@@ -471,9 +471,11 @@ namespace libtorrent {
                         {
                                 if (it->is_used && it->is_assigned() 
                                         && !is_reserved(it->pi) 
+                                        && it->pi != pi
                                         && (!check_read || !is_readered(it->pi))
                                         && it->accessed <= minTime) {
                                         bi = it->index;
+                                        minTime = it->accessed;
                                 };
                         };
 
@@ -500,6 +502,7 @@ namespace libtorrent {
 
                         std::cerr << "INFO Restoring piece: " << pi << std::endl;
                         // t->picker().reset_piece(pi);
+                        t->picker().set_piece_priority(pi, 0);
                         t->picker().we_dont_have(pi);
                 }
 
