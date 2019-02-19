@@ -5,6 +5,7 @@
 #include <chrono>
 #include <math.h>
 #include <memory>
+#include <algorithm>
 
 #include <boost/dynamic_bitset.hpp>
 #include <boost/thread/mutex.hpp>
@@ -36,8 +37,6 @@ namespace libtorrent {
 
         struct memory_piece 
         {
-        // private:
-        //         boost::mutex m_mutex;
         public:
                 int index;
                 int length;
@@ -65,8 +64,6 @@ namespace libtorrent {
 
         struct memory_buffer 
         {
-        // private:
-        //         boost::mutex m_mutex;
         public:
                 int index = -1;
                 int length = 0;
@@ -88,6 +85,7 @@ namespace libtorrent {
                         is_used = false;
                         pi = -1;
                         accessed = now();
+                        std::fill(buffer.begin(), buffer.end(), '\0');
 
                         std::cerr << "INFO Freeing buffer " << index << std::endl;
                 };
@@ -97,6 +95,7 @@ namespace libtorrent {
         {
         private:
                 boost::mutex m_mutex;
+                boost::mutex r_mutex;
         public:
                 Bitset reader_pieces;
                 Bitset reserved_pieces;
@@ -117,6 +116,7 @@ namespace libtorrent {
                 file_storage const* m_files;
                 torrent_info const* m_info;
                 libtorrent::torrent_handle* m_handle;
+                libtorrent::torrent* t;
 
                 bool is_logging = false;
                 bool is_initialized = false;
@@ -159,6 +159,10 @@ namespace libtorrent {
 
                 void initialize(storage_error& ec) {}
 
+                std::int64_t get_memory_size() {
+                        return capacity;
+                }
+
                 void set_memory_size(std::int64_t s) {
                         if (s <= capacity) return;
 
@@ -181,7 +185,7 @@ namespace libtorrent {
 
                         std::cerr << "INFO Increasing buffer to " << buffer_size << " buffers" << std::endl;
 
-                        for (int i = prev_buffer_size - 1; i < buffer_size; i++) {
+                        for (int i = prev_buffer_size; i < buffer_size; i++) {
                                 buffers.push_back(memory_buffer(i, piece_length));
                         }
                 }
@@ -236,21 +240,34 @@ namespace libtorrent {
                         if (!is_initialized) return 0;
 
                         if (is_logging) {
-                                printf("Read piece: %d, off: %d \n", piece, offset);
+                                std::cerr << "INFO readv in  p: " << piece << ", off: " << offset << std::endl;
                         };
 
                         if (!get_read_buffer(&pieces[piece])) {
-                                std::cerr << "INFO noreadbuffer" << piece << std::endl;
+                                std::cerr << "INFO noreadbuffer: " << piece << std::endl;
                                 return 0;
                         };
 
                         int file_offset = offset;
-                        int n = 0;
+                        int n = 0; 
                         for (int i = 0; i < num_bufs; ++i)
                         {
-                                std::memcpy(bufs[i].iov_base, &buffers[pieces[piece].bi].buffer[file_offset], bufs[i].iov_len);
-                                file_offset += bufs[i].iov_len;
-                                n += bufs[i].iov_len;
+                                int const to_copy = std::min(buffers[pieces[piece].bi].buffer.size() - file_offset, bufs[i].iov_len);
+				memcpy(bufs[i].iov_base, &buffers[pieces[piece].bi].buffer[file_offset], to_copy);
+                                file_offset += to_copy;
+				n += to_copy;
+
+				// memcpy(bufs[i].iov_base, &b.buffer[file_offset], bufs[i].iov_len);
+                                // file_offset += bufs[i].iov_len;
+				// n += bufs[i].iov_len;
+                        };
+
+                        if (is_logging) {
+                                int size = bufs_size(bufs, num_bufs);
+                                std::cerr << "INFO readv out p: " << piece << ", pl: " << pieces[piece].length 
+                                        << ", bufs: " << num_bufs << "/" << bufs[0].iov_len
+                                        << ", off: " << offset 
+                                        << ", bs: " << buffers[pieces[piece].bi].buffer.size() << ", res: " << size << "=" << n << std::endl;
                         };
 
                         if (pieces[piece].is_completed && offset+n >= pieces[piece].size) {
@@ -265,31 +282,36 @@ namespace libtorrent {
                 int writev(libtorrent::file::iovec_t const* bufs, int num_bufs
                         , int piece, int offset, int flags, libtorrent::storage_error& ec)
                 {
-                        if (!is_initialized) return 0;
-
                         if (is_logging) {
-                                printf("Write Input: %d, off: %d, bufs: %d \n", piece, offset, bufs_size(bufs, num_bufs));
+                                std::cerr << "INFO writev in  p: " << piece << ", off: " << offset << ", bufs: " << bufs_size(bufs, num_bufs) << std::endl;
                         };
 
+                        if (!is_initialized) return 0;
+
                         if (!get_write_buffer(&pieces[piece])) {
-                                if (is_logging) {
-                                        std::cerr << "INFO nowritebuffer" << piece << std::endl;
-                                };
+                                std::cerr << "INFO nowritebuffer" << piece << std::endl;
                                 return 0;
                         };
 
-                        int size = bufs_size(bufs, num_bufs);
-                        if (buffers[pieces[piece].bi].buffer.size() < offset + size) 
-                                buffers[pieces[piece].bi].buffer.resize(offset + size);
+                        int size = bufs_size(bufs, num_bufs); 
 
                         int file_offset = offset;
                         int n = 0;
                         for (int i = 0; i < num_bufs; ++i)
                         {
-                                std::memcpy(&buffers[pieces[piece].bi].buffer[file_offset], bufs[i].iov_base, bufs[i].iov_len);
-                                file_offset += bufs[i].iov_len;
-                                n += bufs[i].iov_len;
+                                int const to_copy = std::min(std::size_t(pieces[piece].length) - file_offset, bufs[i].iov_len);
+                                std::memcpy(&buffers[pieces[piece].bi].buffer[file_offset], bufs[i].iov_base, to_copy);
+
+                                file_offset += to_copy;
+                                n += to_copy;
                         };
+
+                        if (is_logging) {
+                                std::cerr << "INFO writev out p: " << piece << ", pl: " << pieces[piece].length 
+                                        << ", bufs: " << num_bufs << " / " << bufs[0].iov_len
+                                        << ", req: " << size << ", off: " << offset 
+                                        << ", bs: " << buffers[pieces[piece].bi].buffer.size() << ", res: " << size << "=" << n << std::endl;
+                        }; 
 
                         pieces[piece].size += n;
                         buffers[pieces[piece].bi].accessed = now();
@@ -337,6 +359,7 @@ namespace libtorrent {
 
                 void set_torrent_handle(libtorrent::torrent_handle* h) {
                         m_handle = h;
+                        t = m_handle->native_handle().get();
                 }
 
                 void set_file_priority(std::vector<boost::uint8_t>& prio, libtorrent::storage_error& ec) 
@@ -386,6 +409,7 @@ namespace libtorrent {
                         }
 
                         boost::unique_lock<boost::mutex> scoped_lock(m_mutex);
+
                         // Once again checking in case we had multiple writes in parallel
                         if (p->is_buffered()) return true;
 
@@ -397,14 +421,14 @@ namespace libtorrent {
                                         continue;
                                 };
 
-                                // if (is_logging) {
-                                        // printf("Setting buffer %d to piece %d \n", buffers[i].index, p->index);
-                                // };
                                 std::cerr << "INFO Setting buffer " << buffers[i].index << " to piece " << p->index << std::endl;
 
                                 buffers[i].is_used = true;
                                 buffers[i].pi = p->index;
                                 buffers[i].accessed = now();
+
+                                // buffers[i].buffer.clear();
+                                // buffers[i].buffer.resize(p->length);
 
                                 p->bi = buffers[i].index;
 
@@ -466,6 +490,7 @@ namespace libtorrent {
                 int find_last_buffer(int pi, bool check_read) {
                         int bi = -1;
                         std::chrono::milliseconds minTime = now();
+                        boost::unique_lock<boost::mutex> scoped_lock(r_mutex);
 
                         for (auto it = buffers.begin(); it != buffers.end(); ++it) 
                         {
@@ -473,7 +498,7 @@ namespace libtorrent {
                                         && !is_reserved(it->pi) 
                                         && it->pi != pi
                                         && (!check_read || !is_readered(it->pi))
-                                        && it->accessed <= minTime) {
+                                        && it->accessed < minTime) {
                                         bi = it->index;
                                         minTime = it->accessed;
                                 };
@@ -495,10 +520,10 @@ namespace libtorrent {
                 }
                 
                 void restore_piece(int pi) {
-                        if (!m_handle) return;
+                        if (!m_handle || !t) return;
 
-                        libtorrent::torrent* t = m_handle->native_handle().get();
-                        if (!t) return;
+                        // libtorrent::torrent* t = m_handle->native_handle().get();
+                        // if (!t) return;
 
                         std::cerr << "INFO Restoring piece: " << pi << std::endl;
                         // t->picker().reset_piece(pi);
@@ -517,7 +542,7 @@ namespace libtorrent {
                 void update_reader_pieces(std::vector<int> pieces) {
                         if (!is_initialized) return;
 
-                        boost::unique_lock<boost::mutex> scoped_lock(m_mutex);
+                        boost::unique_lock<boost::mutex> scoped_lock(r_mutex);
                         reader_pieces.reset();
                         for (auto i = pieces.begin(); i != pieces.end(); ++i) {
                                 reader_pieces.set(*i);
@@ -527,7 +552,7 @@ namespace libtorrent {
                 void update_reserved_pieces(std::vector<int> pieces) {
                         if (!is_initialized) return;
 
-                        boost::unique_lock<boost::mutex> scoped_lock(m_mutex);
+                        boost::unique_lock<boost::mutex> scoped_lock(r_mutex);
                         buffer_reserved = 0;
                         reserved_pieces.reset();
                         for (auto i = pieces.begin(); i != pieces.end(); ++i) {
@@ -545,7 +570,13 @@ namespace libtorrent {
                 bool is_readered(int index) {
                         if (!is_initialized) return false;
                         
-                        return reader_pieces.test(index);
+                        if (!m_handle) {
+                                std::cerr << "INFO no handle" << std::endl;
+                                return true;
+                        }
+
+                        return m_handle->piece_priority(index) != 0;
+                        // return reader_pieces.test(index);
                 };
         };
 
