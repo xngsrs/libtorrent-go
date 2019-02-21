@@ -49,9 +49,9 @@ namespace libtorrent {
 %include <libtorrent/storage.hpp>
 
 // %extend libtorrent::storage_interface {
-  // virtual void set_size(std::int64_t size) = 0;
+  // virtual void set_size(boost::int64_t size) = 0;
 
-  // char* read_string(std::int64_t offset, int len, std::int64_t piece_index) = 0;
+  // char* read_string(boost::int64_t offset, int len, boost::int64_t piece_index) = 0;
   // char* read(int piece, int offset, int size) {
   //       libtorrent::storage_error ec;
 

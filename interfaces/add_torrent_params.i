@@ -1,7 +1,9 @@
 %{
 #include <boost/shared_ptr.hpp>
 #include <boost/make_shared.hpp>
+#include <boost/cstdint.hpp>
 #include <libtorrent/add_torrent_params.hpp>
+
 %}
 
 %extend libtorrent::add_torrent_params {
@@ -15,7 +17,7 @@
 		self->ti = ptr;
 	}
 
-	void set_memory_storage(std::int64_t size) {
+	void set_memory_storage(boost::int64_t size) {
 		libtorrent::memory_size = size;
 		self->storage = libtorrent::memory_storage_constructor;
 	}

@@ -1,4 +1,5 @@
-PROJECT = elementumorg
+# PROJECT = elementumorg
+PROJECT = quasarhq
 NAME = libtorrent-go
 GO_PACKAGE = github.com/ElementumOrg/$(NAME)
 CC = cc
@@ -17,9 +18,25 @@ PLATFORMS = \
 	linux-x64 \
 	linux-x86 \
 	windows-x64 \
-	windows-x86
-	# darwin-x64 \
+	windows-x86 \
+	darwin-x64
+	# linux-armv6 \
 	# darwin-x86
+
+PLATFORMS_REMOTE = \
+	android-arm \
+	android-arm64 \
+	android-x64 \
+	android-x86 \
+	linux-arm \
+	linux-armv7 \
+	linux-arm64 \
+	linux-x64 \
+	linux-x86 \
+	windows-x64 \
+	windows-x86 \
+	darwin-x64
+
 
 include platform_host.mk
 
@@ -72,18 +89,14 @@ ifneq ($(CROSS_ROOT),)
 	PKG_CONFIG_PATH = $(CROSS_ROOT)/lib/pkgconfig
 endif
 
-LIBTORRENT_CFLAGS = $(CFLAGS) $(shell PKG_CONFIG_PATH=$(PKG_CONFIG_PATH) $(PKG_CONFIG) --cflags libtorrent-rasterbar) -std=c++11
+LIBTORRENT_CFLAGS = $(CFLAGS) $(shell PKG_CONFIG_PATH=$(PKG_CONFIG_PATH) $(PKG_CONFIG) --cflags libtorrent-rasterbar)
 LIBTORRENT_LDFLAGS = $(LDFLAGS) $(shell PKG_CONFIG_PATH=$(PKG_CONFIG_PATH) $(PKG_CONFIG) --static --libs libtorrent-rasterbar)
 DEFINE_IGNORES = __STDC__|_cdecl|__cdecl|_fastcall|__fastcall|_stdcall|__stdcall|__declspec
 CC_DEFINES = $(shell echo | $(CC) -dM -E - | grep -v -E "$(DEFINE_IGNORES)" | sed -E "s/\#define[[:space:]]+([a-zA-Z0-9_()]+)[[:space:]]+(.*)/-D\1="\2"/g" | tr '\n' ' ')
-# GO_LDFLAGS = $(LIBTORRENT_LDFLAGS) $(CROSS_LDFLAGS)
 
 ifeq ($(TARGET_OS), windows)
-	# CC := /usr/bin/$(CROSS_TRIPLE)-gcc
-	# CXX := /usr/bin/$(CROSS_TRIPLE)-g++
 	CC_DEFINES += -DSWIGWIN
 	CC_DEFINES += -D_WIN32_WINNT=0x0600
-	# CC_DEFINES += -D_WIN32_WINNT=0x0600 -DWIN32 -DWIN32_LEAN_AND_MEAN -DIPV6_TCLASS=39
 	ifeq ($(TARGET_ARCH), x64)
 		CC_DEFINES += -DSWIGWORDSIZE32
 	endif
@@ -113,18 +126,17 @@ $(PLATFORMS):
 ifeq ($@, all)
 	$(MAKE) all
 else
-	$(DOCKER) run --rm -v $(GOPATH):/go -v $(shell pwd):/go/src/$(GO_PACKAGE) -w /go/src/$(GO_PACKAGE) -e GOPATH=/go $(DOCKER_IMAGE):$@ make re;
+	$(DOCKER) run --rm -v $(GOPATH):/go -v $(shell pwd):/go/src/$(GO_PACKAGE) -w /go/src/$(GO_PACKAGE) -e GOPATH=/go $(PROJECT)/$(DOCKER_IMAGE):$@ make re;
 endif
 
 build:
-	# CXXFLAGS='$(CXXFLAGS) -std=c++11' 
 	SWIG_FLAGS='$(CC_DEFINES) $(LIBTORRENT_CFLAGS)' \
 	CC=$(CC) CXX=$(CXX) \
 	PKG_CONFIG_PATH=$(PKG_CONFIG_PATH) \
 	CGO_ENABLED=1 \
 	GOOS=$(GOOS) GOARCH=$(GOARCH) GOARM=$(GOARM) \
 	PATH=.:$$PATH \
-	go install -ldflags='$(GO_LDFLAGS)' -v -x $(PKGDIR)
+	go install -v -ldflags '$(GO_LDFLAGS)' $(PKGDIR)
 	
 clean:
 	rm -rf $(OUT_LIBRARY)
@@ -132,7 +144,7 @@ clean:
 re: clean build
 
 retest:
-	$(DOCKER) run --rm -v $(GOPATH):/go -v $(shell pwd):/go/src/$(GO_PACKAGE) -w /go/src/$(GO_PACKAGE) -e GOPATH=/go $(DOCKER_IMAGE):linux-x64 make runtest;
+	$(DOCKER) run --rm -v $(GOPATH):/go -v $(shell pwd):/go/src/$(GO_PACKAGE) -w /go/src/$(GO_PACKAGE) -e GOPATH=/go $(PROJECT)/$(DOCKER_IMAGE):linux-x64 make runtest;
 
 runtest:
 	CC=${CC} CXX=$(CXX) \
@@ -143,7 +155,7 @@ runtest:
 	cd test; go run -x test.go; cd ..
 
 env:
-	$(DOCKER) build -t $(DOCKER_IMAGE):$(PLATFORM) $(PLATFORM)
+	$(DOCKER) build -t $(PROJECT)/$(DOCKER_IMAGE):$(PLATFORM) $(PLATFORM)
 
 envs:
 	for i in $(PLATFORMS); do \
@@ -151,13 +163,15 @@ envs:
 	done
 
 pull:
-	docker pull $(PROJECT)/cross-compiler:$(PLATFORM)
-	docker tag $(PROJECT)/cross-compiler:$(PLATFORM) cross-compiler:$(PLATFORM)
+	docker pull $(PROJECT)/libtorrent-go:$(PLATFORM)
+	docker tag $(PROJECT)/libtorrent-go:$(PLATFORM) libtorrent-go:$(PLATFORM)
 
 pull-all:
-	for i in $(PLATFORMS); do \
+	for i in $(PLATFORMS_REMOTE); do \
 		PLATFORM=$$i $(MAKE) pull; \
 	done
+	docker tag $(PROJECT)/libtorrent-go:linux-arm $(PROJECT)/libtorrent-go:linux-armv6
+	docker tag libtorrent-go:linux-arm libtorrent-go:linux-armv6
 
 push:
 	docker tag libtorrent-go:$(PLATFORM) $(PROJECT)/libtorrent-go:$(PLATFORM)

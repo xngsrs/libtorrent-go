@@ -2,11 +2,13 @@
 #ifndef TORRENT_MEMORY_STORAGE_HPP_INCLUDED
 #define TORRENT_MEMORY_STORAGE_HPP_INCLUDED
 
-#include <chrono>
 #include <math.h>
 #include <memory>
 #include <algorithm>
+#include <iostream>
 
+#include <boost/cstdint.hpp>
+#include <boost/lexical_cast.hpp>
 #include <boost/dynamic_bitset.hpp>
 #include <boost/thread/mutex.hpp>
 
@@ -27,12 +29,16 @@ typedef boost::dynamic_bitset<> Bitset;
 using namespace libtorrent;
 
 namespace libtorrent {
-        std::int64_t memory_size = 0;
+        boost::int64_t memory_size = 0;
 
-        std::chrono::milliseconds now() {
-                return std::chrono::duration_cast< std::chrono::milliseconds >(
-                        std::chrono::system_clock::now().time_since_epoch()
-                );
+        // std::chrono::milliseconds now() {
+        //         return std::chrono::duration_cast< std::chrono::milliseconds >(
+        //                 std::chrono::system_clock::now().time_since_epoch()
+        //         );
+        // }
+        
+        boost::posix_time::ptime now() {
+                return boost::posix_time::microsec_clock::local_time();
         }
 
         struct memory_piece 
@@ -41,12 +47,17 @@ namespace libtorrent {
                 int index;
                 int length;
 
-                int size = 0;
-                int bi = -1;
-                bool is_completed = false;
-                bool is_read = false;
+                int size;
+                int bi;
+                bool is_completed;
+                bool is_read;
 
-                memory_piece(int i, int length) : index(i), length(length) {};
+                memory_piece(int i, int length) : index(i), length(length) {
+                        size = 0;
+                        bi = -1;
+                        is_completed = false;
+                        is_read = false;
+                };
 
                 bool is_buffered() {
                         return bi != -1;
@@ -65,15 +76,21 @@ namespace libtorrent {
         struct memory_buffer 
         {
         public:
-                int index = -1;
-                int length = 0;
+                int index;
+                int length;
                 std::vector<char> buffer;
 
-                int pi = -1;
-                bool is_used = false;
-                std::chrono::milliseconds accessed;
+                int pi;
+                bool is_used;
+                boost::posix_time::ptime accessed;
 
                 memory_buffer(int index, int length) : index(index), length(length) {
+                        index = -1;
+                        length = 0;
+
+                        pi = -1;
+                        is_used = false;
+
                         buffer.resize(length);
                 };
 
@@ -101,16 +118,16 @@ namespace libtorrent {
                 Bitset reserved_pieces;
 
                 std::string id;
-                std::int64_t capacity;
+                boost::int64_t capacity;
 
-                int piece_count = 0;
-                std::int64_t piece_length = 0;
+                int piece_count;
+                boost::int64_t piece_length;
                 std::vector<memory_piece> pieces;
 
-                int buffer_size = 0;
-                int buffer_limit = 0;
-                int buffer_used = 0;
-                int buffer_reserved = 0;
+                int buffer_size;
+                int buffer_limit;
+                int buffer_used;
+                int buffer_reserved;
                 std::vector<memory_buffer> buffers;
 
                 file_storage const* m_files;
@@ -118,11 +135,23 @@ namespace libtorrent {
                 libtorrent::torrent_handle* m_handle;
                 libtorrent::torrent* t;
 
-                bool is_logging = false;
-                bool is_initialized = false;
-                bool is_reading = false;
+                bool is_logging;
+                bool is_initialized;
+                bool is_reading;
 
                 memory_storage(storage_params const& params) {
+                        piece_count = 0;
+                        piece_length = 0;
+
+                        buffer_size = 0;
+                        buffer_limit = 0;
+                        buffer_used = 0;
+                        buffer_reserved = 0;
+
+                        is_logging = false;
+                        is_initialized = false;
+                        is_reading = false;
+
                         m_files = params.files;
                         m_info = params.info;
 
@@ -159,11 +188,11 @@ namespace libtorrent {
 
                 void initialize(storage_error& ec) {}
 
-                std::int64_t get_memory_size() {
+                boost::int64_t get_memory_size() {
                         return capacity;
                 }
 
-                void set_memory_size(std::int64_t s) {
+                void set_memory_size(boost::int64_t s) {
                         if (s <= capacity) return;
 
                         boost::unique_lock<boost::mutex> scoped_lock(m_mutex);
@@ -477,11 +506,12 @@ namespace libtorrent {
                 std::string get_buffer_info() {
                         std::string result = "";
                         
-                        for (auto it = buffers.begin(); it != buffers.end(); ++it) 
+                        for (int i = 0; i < buffers.size(); i++) 
                         {
                                 if (!result.empty()) result += " ";
 
-                                result += std::to_string(it->index) + ":" + std::to_string(it->pi);
+                                // result += std::to_string(it->index) + ":" + std::to_string(it->pi);
+                                result += boost::lexical_cast<std::string>(buffers[i].index) + ":" + boost::lexical_cast<std::string>(buffers[i].pi);
                         };
 
                         return result;
@@ -489,18 +519,18 @@ namespace libtorrent {
 
                 int find_last_buffer(int pi, bool check_read) {
                         int bi = -1;
-                        std::chrono::milliseconds minTime = now();
+                        boost::posix_time::ptime minTime = now();
                         boost::unique_lock<boost::mutex> scoped_lock(r_mutex);
 
-                        for (auto it = buffers.begin(); it != buffers.end(); ++it) 
+                        for (int i = 0; i < buffers.size(); i++) 
                         {
-                                if (it->is_used && it->is_assigned() 
-                                        && !is_reserved(it->pi) 
-                                        && it->pi != pi
-                                        && (!check_read || !is_readered(it->pi))
-                                        && it->accessed < minTime) {
-                                        bi = it->index;
-                                        minTime = it->accessed;
+                                if (buffers[i].is_used && buffers[i].is_assigned() 
+                                        && !is_reserved(buffers[i].pi) 
+                                        && buffers[i].pi != pi
+                                        && (!check_read || !is_readered(buffers[i].pi))
+                                        && buffers[i].accessed < minTime) {
+                                        bi = buffers[i].index;
+                                        minTime = buffers[i].accessed;
                                 };
                         };
 
@@ -544,8 +574,8 @@ namespace libtorrent {
 
                         boost::unique_lock<boost::mutex> scoped_lock(r_mutex);
                         reader_pieces.reset();
-                        for (auto i = pieces.begin(); i != pieces.end(); ++i) {
-                                reader_pieces.set(*i);
+                        for (int i = 0; i < pieces.size(); i++) {
+                                reader_pieces.set(pieces[i]);
                         };
                 };
 
@@ -555,8 +585,8 @@ namespace libtorrent {
                         boost::unique_lock<boost::mutex> scoped_lock(r_mutex);
                         buffer_reserved = 0;
                         reserved_pieces.reset();
-                        for (auto i = pieces.begin(); i != pieces.end(); ++i) {
-                                reserved_pieces.set(*i);
+                        for (int i = 0; i < pieces.size(); i++) {
+                                reserved_pieces.set(pieces[i]);
                                 buffer_reserved++;
                         };
                 };
