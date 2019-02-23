@@ -85,9 +85,6 @@ namespace libtorrent {
                 boost::posix_time::ptime accessed;
 
                 memory_buffer(int index, int length) : index(index), length(length) {
-                        index = -1;
-                        length = 0;
-
                         pi = -1;
                         is_used = false;
 
