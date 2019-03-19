@@ -232,7 +232,7 @@ namespace libtorrent {
                         };
 
                         if (!get_read_buffer(&pieces[piece])) {
-                                std::cerr << "INFO nobuffer" << piece << ", off: " << offset << std::endl;
+                                std::cerr << "INFO nobuffer: " << piece << ", off: " << offset << std::endl;
                                 restore_piece(piece);
                                 return -1;
                         };
@@ -315,7 +315,7 @@ namespace libtorrent {
                         if (!is_initialized) return 0;
 
                         if (!get_write_buffer(&pieces[piece])) {
-                                std::cerr << "INFO nowritebuffer" << piece << std::endl;
+                                std::cerr << "INFO nowritebuffer: " << piece << std::endl;
                                 return 0;
                         };
 
@@ -440,7 +440,10 @@ namespace libtorrent {
                         if (p->is_buffered()) return true;
 
                         // Check if piece is not in reader ranges and avoid allocation
-                        if (is_reading && !is_readered(p->index)) return false;
+                        if (is_reading && !is_readered(p->index)) {
+                                restore_piece(p->index);
+                                return false;
+                        }
 
                         for (int i = 0; i < buffer_size; i++) {
                                 if (buffers[i].is_used) {
