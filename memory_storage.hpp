@@ -557,6 +557,7 @@ namespace libtorrent {
 
                         std::cerr << "INFO Restoring piece: " << pi << std::endl;
                         // t->picker().reset_piece(pi);
+                        t->reset_piece_deadline(pi);
                         t->picker().set_piece_priority(pi, 0);
                         t->picker().we_dont_have(pi);
                 }
