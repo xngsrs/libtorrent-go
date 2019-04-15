@@ -69,7 +69,9 @@ namespace libtorrent {
                         is_read = false;
                         size = 0;
 
-                        std::cerr << "INFO Freeing piece " << index << std::endl;
+                        // if (is_logging) {
+                        //         std::cerr << "INFO Freeing piece " << index << std::endl;
+                        // };
                 }
         };
 
@@ -101,7 +103,9 @@ namespace libtorrent {
                         accessed = now();
                         std::fill(buffer.begin(), buffer.end(), '\0');
 
-                        std::cerr << "INFO Freeing buffer " << index << std::endl;
+                        // if (is_logging) {
+                        //         std::cerr << "INFO Freeing buffer " << index << std::endl;
+                        // };
                 };
         };
 
@@ -232,12 +236,16 @@ namespace libtorrent {
                         };
 
                         if (!get_read_buffer(&pieces[piece])) {
-                                std::cerr << "INFO nobuffer: " << piece << ", off: " << offset << std::endl;
+                                if (is_logging) {
+                                        std::cerr << "INFO nobuffer: " << piece << ", off: " << offset << std::endl;
+                                };
                                 restore_piece(piece);
                                 return -1;
                         };
                         if (pieces[piece].size < pieces[piece].length) {
-                                std::cerr << "INFO less: " << piece << ", off: " << offset << ", size: " << pieces[piece].size << ", length: " << pieces[piece].length << std::endl;
+                                if (is_logging) {
+                                        std::cerr << "INFO less: " << piece << ", off: " << offset << ", size: " << pieces[piece].size << ", length: " << pieces[piece].length << std::endl;
+                                };
                                 restore_piece(piece);
                                 return -1;
                         };
@@ -270,7 +278,9 @@ namespace libtorrent {
                         };
 
                         if (!get_read_buffer(&pieces[piece])) {
-                                std::cerr << "INFO noreadbuffer: " << piece << std::endl;
+                                if (is_logging) {
+                                        std::cerr << "INFO noreadbuffer: " << piece << std::endl;
+                                };
                                 return 0;
                         };
 
@@ -315,7 +325,9 @@ namespace libtorrent {
                         if (!is_initialized) return 0;
 
                         if (!get_write_buffer(&pieces[piece])) {
-                                std::cerr << "INFO nowritebuffer: " << piece << std::endl;
+                                if (is_logging) {
+                                        std::cerr << "INFO nowritebuffer: " << piece << std::endl;
+                                };
                                 return 0;
                         };
 
@@ -450,7 +462,9 @@ namespace libtorrent {
                                         continue;
                                 };
 
-                                std::cerr << "INFO Setting buffer " << buffers[i].index << " to piece " << p->index << std::endl;
+                                if (is_logging) {
+                                        std::cerr << "INFO Setting buffer " << buffers[i].index << " to piece " << p->index << std::endl;
+                                };
 
                                 buffers[i].is_used = true;
                                 buffers[i].pi = p->index;
@@ -483,12 +497,16 @@ namespace libtorrent {
                         boost::unique_lock<boost::mutex> scoped_lock(m_mutex);
 
                         while (buffer_used >= buffer_limit) {
-                                std::cerr << "INFO Trimming " << buffer_used << " to " << buffer_limit << " with reserved " << buffer_reserved << ", " << get_buffer_info() << std::endl;
+                                if (is_logging) {
+                                        std::cerr << "INFO Trimming " << buffer_used << " to " << buffer_limit << " with reserved " << buffer_reserved << ", " << get_buffer_info() << std::endl;
+                                };
 
                                 if (!reader_pieces.empty()) {
                                         int bi = find_last_buffer(pi, true);
                                         if (bi != -1) {
-                                                std::cerr << "INFO Removing non-read piece: " << buffers[bi].pi << ", buffer:" << bi << std::endl;
+                                                if (is_logging) {
+                                                        std::cerr << "INFO Removing non-read piece: " << buffers[bi].pi << ", buffer:" << bi << std::endl;
+                                                };
                                                 remove_piece(bi);
                                                 continue;
                                         }
@@ -496,7 +514,9 @@ namespace libtorrent {
 
                                 int bi = find_last_buffer(pi, false);
                                 if (bi != -1) {
-                                        std::cerr << "INFO Removing LRU piece: " << buffers[bi].pi << ", buffer:" << bi << std::endl;
+                                        if (is_logging) {
+                                                std::cerr << "INFO Removing LRU piece: " << buffers[bi].pi << ", buffer:" << bi << std::endl;
+                                        };
                                         remove_piece(bi);
                                         continue;
                                 }
@@ -555,7 +575,9 @@ namespace libtorrent {
                         // libtorrent::torrent* t = m_handle->native_handle().get();
                         // if (!t) return;
 
-                        std::cerr << "INFO Restoring piece: " << pi << std::endl;
+                        if (is_logging) {
+                                std::cerr << "INFO Restoring piece: " << pi << std::endl;
+                        };
                         // t->picker().reset_piece(pi);
                         t->reset_piece_deadline(pi);
                         t->picker().set_piece_priority(pi, 0);
