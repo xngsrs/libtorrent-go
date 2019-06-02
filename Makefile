@@ -1,5 +1,4 @@
-# PROJECT = elementumorg
-PROJECT = quasarhq
+PROJECT = elementumorg
 NAME = libtorrent-go
 GO_PACKAGE = github.com/ElementumOrg/$(NAME)
 CC = cc
@@ -19,24 +18,27 @@ PLATFORMS = \
 	linux-x86 \
 	windows-x64 \
 	windows-x86 \
-	darwin-x64
-	# linux-armv6 \
-	# darwin-x86
+	darwin-x64 \
+	darwin-x86
 
-PLATFORMS_REMOTE = \
-	android-arm \
-	android-arm64 \
-	android-x64 \
-	android-x86 \
-	linux-arm \
-	linux-armv7 \
-	linux-arm64 \
-	linux-x64 \
-	linux-x86 \
-	windows-x64 \
-	windows-x86 \
-	darwin-x64
+BOOST_VERSION = 1.69.0
+BOOST_VERSION_FILE = $(shell echo $(BOOST_VERSION) | sed s/\\./_/g)
+BOOST_SHA256 = 8f32d4617390d1c2d16f26a27ab60d97807b35440d45891fa340fc2648b04406
 
+OPENSSL_VERSION = 1.1.1b
+OPENSSL_SHA256 = 5c557b023230413dfb0756f3137a13e6d726838ccd1430888ad15bfb2b43ea4b
+
+SWIG_VERSION = f042543c6f87cd1598495d23e0afa16d2f4775ed
+
+GOLANG_VERSION = 1.12.5
+GOLANG_SRC_URL = https://golang.org/dl/go$(GOLANG_VERSION).src.tar.gz
+GOLANG_SRC_SHA256 = 2aa5f088cbb332e73fc3def546800616b38d3bfe6b8713b8a6404060f22503e8
+
+GOLANG_BOOTSTRAP_VERSION = 1.4-bootstrap-20170531
+GOLANG_BOOTSTRAP_URL = https://dl.google.com/go/go$(GOLANG_BOOTSTRAP_VERSION).tar.gz
+GOLANG_BOOTSTRAP_SHA256 = 49f806f66762077861b7de7081f586995940772d29d4c45068c134441a743fa2
+
+LIBTORRENT_VERSION = 6f1250c6535730897909240ea0f4f2a81937d21a
 
 include platform_host.mk
 
@@ -126,7 +128,7 @@ $(PLATFORMS):
 ifeq ($@, all)
 	$(MAKE) all
 else
-	$(DOCKER) run --rm -v $(GOPATH):/go -v $(shell pwd):/go/src/$(GO_PACKAGE) -w /go/src/$(GO_PACKAGE) -e GOPATH=/go $(PROJECT)/$(DOCKER_IMAGE):$@ make re;
+	$(DOCKER) run --rm -v $(GOPATH):/go -v $(shell pwd):/go/src/$(GO_PACKAGE) -w /go/src/$(GO_PACKAGE) -e GOPATH=/go $(DOCKER_IMAGE):$@ make re;
 endif
 
 build:
@@ -154,8 +156,30 @@ runtest:
 	PATH=.:$$PATH \
 	cd test; go run -x test.go; cd ..
 
-env:
-	$(DOCKER) build -t $(PROJECT)/$(DOCKER_IMAGE):$(PLATFORM) $(PLATFORM)
+base:
+	$(DOCKER) build -t $(DOCKER_IMAGE):base .
+
+musl:
+	$(DOCKER) build -t $(DOCKER_IMAGE):musl -f docker/musl.Dockerfile docker
+
+env: base musl
+	$(DOCKER) build \
+		--build-arg BOOST_VERSION=$(BOOST_VERSION) \
+		--build-arg BOOST_VERSION_FILE=$(BOOST_VERSION_FILE) \
+		--build-arg BOOST_SHA256=$(BOOST_SHA256) \
+		--build-arg OPENSSL_VERSION=$(OPENSSL_VERSION) \
+		--build-arg OPENSSL_SHA256=$(OPENSSL_SHA256) \
+		--build-arg SWIG_VERSION=$(SWIG_VERSION) \
+		--build-arg SWIG_SHA256=$(SWIG_SHA256) \
+		--build-arg GOLANG_VERSION=$(GOLANG_VERSION) \
+		--build-arg GOLANG_SRC_URL=$(GOLANG_SRC_URL) \
+		--build-arg GOLANG_SRC_SHA256=$(GOLANG_SRC_SHA256) \
+		--build-arg GOLANG_BOOTSTRAP_VERSION=$(GOLANG_BOOTSTRAP_VERSION) \
+		--build-arg GOLANG_BOOTSTRAP_URL=$(GOLANG_BOOTSTRAP_URL) \
+		--build-arg GOLANG_BOOTSTRAP_SHA256=$(GOLANG_BOOTSTRAP_SHA256) \
+		--build-arg LIBTORRENT_VERSION=$(LIBTORRENT_VERSION) \
+		-t $(DOCKER_IMAGE):$(PLATFORM) \
+		-f docker/$(PLATFORM).Dockerfile docker
 
 envs:
 	for i in $(PLATFORMS); do \
@@ -167,11 +191,9 @@ pull:
 	docker tag $(PROJECT)/libtorrent-go:$(PLATFORM) libtorrent-go:$(PLATFORM)
 
 pull-all:
-	for i in $(PLATFORMS_REMOTE); do \
+	for i in $(PLATFORMS); do \
 		PLATFORM=$$i $(MAKE) pull; \
 	done
-	docker tag $(PROJECT)/libtorrent-go:linux-arm $(PROJECT)/libtorrent-go:linux-armv6
-	docker tag libtorrent-go:linux-arm libtorrent-go:linux-armv6
 
 push:
 	docker tag libtorrent-go:$(PLATFORM) $(PROJECT)/libtorrent-go:$(PLATFORM)

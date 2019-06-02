@@ -6,16 +6,74 @@ SWIG Go bindings for libtorrent-rasterbar
 Forked from <https://github.com/steeve/libtorrent-go> and <https://github.com/scakemyer/libtorrent-go>
 
 
-Changes
--------
+C/C++ Cross compiling environment containers
 
-+ Android NDK n19
-+ GCC7
-+ Latest MinGW
+This has been designed to run `libtorrent-go` cross compilation and is not meant to be perfect nor minimal. Adapt as required.
+
+## Overview
+
+### Environment variables
+
+- CROSS_TRIPLE
+- CROSS_ROOT
+- LD_LIBRARY_PATH
+- PKG_CONFIG_PATH
+
+Also adds CROSS_ROOT/bin in your PATH.
+
+### Installed packages
+
+Based on Debian Stretch:
+- bash
+- curl
+- wget
+- pkg-config
+- build-essential
+- make
+- automake
+- autogen
+- libtool
+- libpcre3-dev
+- bison
+- yodl
+- tar
+- xz-utils
+- bzip2
+- gzip
+- unzip
+- file
+- rsync
+- sed
+- upx
+
+And a selection of platform specific packages (see below).
+
+### Platforms built
+
+- android-arm (android-ndk-r14b with api 19, clang)
+- android-arm64 (android-ndk-r14b with api 21, clang)
+- android-x64 (android-ndk-r14b with api 21, clang)
+- android-x86 (android-ndk-r14b with api 21, clang)
+- darwin-x64 (clang-4.0, llvm-4.0-dev, libtool, libxml2-dev, uuid-dev, libssl-dev patch make cpio)
+- darwin-x86 (clang-4.0, llvm-4.0-dev, libtool, libxml2-dev, uuid-dev, libssl-dev patch make cpio)
+- linux-armv6 (gcc-9 with Musl)
+- linux-armv7 (gcc-9 with Musl)
+- linux-arm64 (gcc-9 with Musl)
+- linux-x64 (gcc-9 with Musl)
+- linux-x86 (gcc-9 with Musl)
+- windows-x64 (mingw-w64)
+- windows-x86 (mingw-w64)
+
+### Software
+
++ BOOST_VERSION = 1.69.0
++ OPENSSL_VERSION = 1.1.1b
++ SWIG_VERSION = f042543c6f87cd1598495d23e0afa16d2f4775ed
++ GOLANG_VERSION = 1.12.5
++ LIBTORRENT_VERSION = 6f1250c6535730897909240ea0f4f2a81937d21a
 
 
-Download and Build
-------------------
+# Download and Build
 
 + First, you need [Docker](https://docs.docker.com/engine/installation/) and [golang](https://golang.org/doc/install)
 
@@ -46,9 +104,9 @@ Download and Build
 + Build libtorrent-go:
 
         make [ android-arm | android-arm64 | android-x86 | android-x64 |
-               linux-x86   | linux-x64   | linux-armv6   | linux-armv7 | linux-arm64 |
-               windows-x86 | windows-x64 | 
-               darwin-x64 (now disabled) | darwin-x86 (now disabled) ]
+               linux-x86   | linux-x64     | linux-armv6 | linux-armv7 | linux-arm64 |
+               windows-x86 | windows-x64   | 
+               darwin-x64  | darwin-x86 ]
 
     To build libtorrent bindings for all platforms use `make` or specify needed platform, e.g. `make android-arm`.
     Built packages will be placed under `~/go/pkg/<platform>`
