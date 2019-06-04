@@ -31,10 +31,12 @@ ARG LIBTORRENT_VERSION
 
 # Install Boost.System
 COPY scripts/build-boost.sh /build/
+ENV GCC_CONFIG="${GCC_CONFIG} --enable-default-pie"
 ENV BOOST_CC gcc
 ENV BOOST_CXX c++
 ENV BOOST_OS linux
 ENV BOOST_TARGET_OS linux
+ENV BOOST_OPTS cxxflags=-fPIC cflags=-fPIC
 RUN ./build-boost.sh
 
 # Install OpenSSL
@@ -60,6 +62,7 @@ ENV PATH ${PATH}:/usr/local/go/bin
 COPY scripts/build-libtorrent.sh /build/
 ENV LT_CC ${CROSS_TRIPLE}-gcc
 ENV LT_CXX ${CROSS_TRIPLE}-g++
+ENV LT_PTHREADS TRUE
 ENV LT_CXXFLAGS -std=c++11 -Wno-psabi
 RUN ./build-libtorrent.sh
 
