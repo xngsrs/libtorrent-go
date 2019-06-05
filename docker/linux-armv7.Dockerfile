@@ -3,11 +3,11 @@ FROM libtorrent-go:musl
 RUN mkdir -p /build
 WORKDIR /build
 
-RUN wget -q https://musl.cc/armv7l-linux-musleabihf-cross.tgz -O cross.tgz && \
+RUN wget -q https://musl.cc/armv7m-linux-musleabi-cross.tgz -O cross.tgz && \
     tar -xzf cross.tgz -C /usr/ && \
     rm cross.tgz
 
-ENV CROSS_TRIPLE armv7l-linux-musleabihf
+ENV CROSS_TRIPLE armv7m-linux-musleabi
 ENV CROSS_ROOT /usr/${CROSS_TRIPLE}-cross
 ENV PATH ${PATH}:${CROSS_ROOT}/bin
 ENV LD_LIBRARY_PATH ${CROSS_ROOT}/lib:${LD_LIBRARY_PATH}
