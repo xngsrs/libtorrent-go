@@ -112,6 +112,8 @@ else ifeq ($(TARGET_OS), android)
 	CC = $(CROSS_ROOT)/bin/$(CROSS_TRIPLE)-clang
 	CXX = $(CROSS_ROOT)/bin/$(CROSS_TRIPLE)-clang++
 	GO_LDFLAGS += -flto
+else ifeq ($(TARGET_OS), linux)
+	GO_LDFLAGS += -flto=auto
 endif
 
 
