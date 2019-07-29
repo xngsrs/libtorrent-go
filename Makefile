@@ -113,7 +113,8 @@ else ifeq ($(TARGET_OS), android)
 	CXX = $(CROSS_ROOT)/bin/$(CROSS_TRIPLE)-clang++
 	GO_LDFLAGS += -flto
 else ifeq ($(TARGET_OS), linux)
-	GO_LDFLAGS += -flto=auto -fprofile-correction
+	GO_LDFLAGS += -flto=auto
+	# GO_LDFLAGS += -flto=auto -fprofile-correction
 endif
 
 
