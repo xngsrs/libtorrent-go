@@ -17,6 +17,7 @@ fi
 CC=${LT_CC} CXX=${LT_CXX} \
 CFLAGS="${CFLAGS} -O2 ${LT_FLAGS}" \
 CXXFLAGS="${CXXFLAGS} ${LT_CXXFLAGS} ${CFLAGS}" \
+LDFLAGS="${LT_LDFLAGS}" \
 LIBS=${LT_LIBS} \
 ./configure \
     --enable-static \
