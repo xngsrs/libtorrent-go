@@ -1,19 +1,8 @@
-FROM libtorrent-go:musl
+FROM cross-compiler:linux-armv6
 
 RUN mkdir -p /build
 WORKDIR /build
 
-RUN wget -q https://musl.cc/arm-linux-musleabihf-cross.tgz -O cross.tgz && \
-    tar -xzf cross.tgz -C /usr/ && \
-    rm cross.tgz
-
-ENV CROSS_TRIPLE arm-linux-musleabihf
-ENV CROSS_ROOT /usr/${CROSS_TRIPLE}-cross
-ENV PATH ${PATH}:${CROSS_ROOT}/bin
-ENV LD_LIBRARY_PATH ${CROSS_ROOT}/lib:${LD_LIBRARY_PATH}
-ENV PKG_CONFIG_PATH ${CROSS_ROOT}/lib/pkgconfig:${PKG_CONFIG_PATH}
-
-ARG MUSL_VERSION
 ARG BOOST_VERSION
 ARG BOOST_VERSION_FILE
 ARG BOOST_SHA256
@@ -31,7 +20,6 @@ ARG LIBTORRENT_VERSION
 
 # Install Boost.System
 COPY scripts/build-boost.sh /build/
-ENV GCC_CONFIG="${GCC_CONFIG} --enable-default-pie"
 ENV BOOST_CC gcc
 ENV BOOST_CXX c++
 ENV BOOST_OS linux
@@ -64,8 +52,5 @@ COPY scripts/build-libtorrent.sh /build/
 ENV LT_CC ${CROSS_TRIPLE}-gcc
 ENV LT_CXX ${CROSS_TRIPLE}-g++
 ENV LT_PTHREADS TRUE
-ENV LT_CXXFLAGS -std=c++11 -Wno-psabi -flto=auto
-ENV LT_LDFLAGS -flto=auto
+ENV LT_CXXFLAGS -std=c++11 -Wno-psabi
 RUN ./build-libtorrent.sh
-
-RUN apk del go

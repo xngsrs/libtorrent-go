@@ -1,19 +1,8 @@
-FROM libtorrent-go:musl
+FROM cross-compiler:linux-x64
 
 RUN mkdir -p /build
 WORKDIR /build
 
-RUN wget -q https://more.musl.cc/9.1.0/x86_64-linux-musl/x86_64-linux-musl-cross.tgz -O cross.tgz && \
-    tar -xzf cross.tgz -C /usr/ && \
-    rm cross.tgz
-
-ENV CROSS_TRIPLE x86_64-linux-musl
-ENV CROSS_ROOT /usr/${CROSS_TRIPLE}-cross
-ENV PATH ${CROSS_ROOT}/bin:${PATH}
-ENV LD_LIBRARY_PATH ${CROSS_ROOT}/lib:${LD_LIBRARY_PATH}
-ENV PKG_CONFIG_PATH ${CROSS_ROOT}/lib/pkgconfig:${PKG_CONFIG_PATH}
-
-ARG MUSL_VERSION
 ARG BOOST_VERSION
 ARG BOOST_VERSION_FILE
 ARG BOOST_SHA256
@@ -60,8 +49,5 @@ ENV PATH ${PATH}:/usr/local/go/bin
 COPY scripts/build-libtorrent.sh /build/
 ENV LT_CC ${CROSS_TRIPLE}-gcc
 ENV LT_CXX ${CROSS_TRIPLE}-g++
-ENV LT_CXXFLAGS -std=c++11 -Wno-psabi -flto=auto
-ENV LT_LDFLAGS -flto=auto
+ENV LT_CXXFLAGS -std=c++11 -Wno-psabi
 RUN ./build-libtorrent.sh
-
-RUN apk del go

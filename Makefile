@@ -30,16 +30,15 @@ OPENSSL_SHA256 = f6fb3079ad15076154eda9413fed42877d668e7069d9b87396d0804fdb3f4c9
 
 SWIG_VERSION = c48d11ac17f04038b617cc44c2a44c0d09041267
 
-GOLANG_VERSION = 1.13
+GOLANG_VERSION = 1.13.1
 GOLANG_SRC_URL = https://golang.org/dl/go$(GOLANG_VERSION).src.tar.gz
-GOLANG_SRC_SHA256 = 3fc0b8b6101d42efd7da1da3029c0a13f22079c0c37ef9730209d8ec665bf122
+GOLANG_SRC_SHA256 = 81f154e69544b9fa92b1475ff5f11e64270260d46e7e36c34aafc8bc96209358
 
 GOLANG_BOOTSTRAP_VERSION = 1.4-bootstrap-20170531
 GOLANG_BOOTSTRAP_URL = https://dl.google.com/go/go$(GOLANG_BOOTSTRAP_VERSION).tar.gz
 GOLANG_BOOTSTRAP_SHA256 = 49f806f66762077861b7de7081f586995940772d29d4c45068c134441a743fa2
 
 LIBTORRENT_VERSION = 84f10d05caff0d20213280951752797d166e1759
-MUSL_VERSION = f5eee489f7662b08ad1bba4b1267e34eb9565bba
 
 include platform_host.mk
 
@@ -114,7 +113,6 @@ else ifeq ($(TARGET_OS), android)
 	GO_LDFLAGS += -flto=auto
 else ifeq ($(TARGET_OS), linux)
 	GO_LDFLAGS += -flto=auto
-	# GO_LDFLAGS += -flto=auto -fprofile-correction
 endif
 
 
@@ -160,13 +158,7 @@ runtest:
 	PATH=.:$$PATH \
 	cd test; go run -x test.go; cd ..
 
-base:
-	$(DOCKER) build -t $(DOCKER_IMAGE):base .
-
-musl:
-	$(DOCKER) build -t $(DOCKER_IMAGE):musl -f docker/musl.Dockerfile docker
-
-env: base musl
+env:
 	$(DOCKER) build \
 		--build-arg BOOST_VERSION=$(BOOST_VERSION) \
 		--build-arg BOOST_VERSION_FILE=$(BOOST_VERSION_FILE) \
@@ -182,7 +174,6 @@ env: base musl
 		--build-arg GOLANG_BOOTSTRAP_URL=$(GOLANG_BOOTSTRAP_URL) \
 		--build-arg GOLANG_BOOTSTRAP_SHA256=$(GOLANG_BOOTSTRAP_SHA256) \
 		--build-arg LIBTORRENT_VERSION=$(LIBTORRENT_VERSION) \
-		--build-arg MUSL_VERSION=$(MUSL_VERSION) \
 		-t $(DOCKER_IMAGE):$(PLATFORM) \
 		-f docker/$(PLATFORM).Dockerfile docker
 
@@ -192,8 +183,8 @@ envs:
 	done
 
 pull:
-	docker pull $(PROJECT)/libtorrent-go:$(PLATFORM)
-	docker tag $(PROJECT)/libtorrent-go:$(PLATFORM) libtorrent-go:$(PLATFORM)
+	docker pull $(PROJECT)/cross-compiler:$(PLATFORM)
+	docker tag $(PROJECT)/cross-compiler:$(PLATFORM) cross-compiler:$(PLATFORM)
 
 pull-all:
 	for i in $(PLATFORMS); do \

@@ -8,7 +8,7 @@ echo "$OPENSSL_SHA256  openssl-${OPENSSL_VERSION}.tar.gz" | sha256sum -c -
 tar -xzf openssl-${OPENSSL_VERSION}.tar.gz
 rm openssl-${OPENSSL_VERSION}.tar.gz
 cd openssl-${OPENSSL_VERSION}/
-CROSS_COMPILE=${CROSS_TRIPLE}- ./Configure threads no-shared ${OPENSSL_OPTS} --prefix=${CROSS_ROOT} 1>log 2>err
-make -j $(cat /proc/cpuinfo | grep processor | wc -l) 1>log 2>err
-make install 1>log 2>err
+CROSS_COMPILE=${CROSS_TRIPLE}- ./Configure threads no-shared ${OPENSSL_OPTS} --prefix=${CROSS_ROOT} 1>/dev/null 2>/dev/null
+make -j $(cat /proc/cpuinfo | grep processor | wc -l) 1>/dev/null 2>/dev/null
+make install 1>/dev/null 2>/dev/null
 rm -rf `pwd`

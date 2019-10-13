@@ -1,27 +1,7 @@
-FROM libtorrent-go:base
+FROM cross-compiler:android-x64
 
 RUN mkdir -p /build
 WORKDIR /build
-
-ENV CROSS_TRIPLE x86_64-linux-android
-ENV CROSS_ROOT /usr/${CROSS_TRIPLE}
-ENV PATH ${PATH}:${CROSS_ROOT}/bin
-ENV LD_LIBRARY_PATH ${CROSS_ROOT}/lib:${LD_LIBRARY_PATH}
-ENV PKG_CONFIG_PATH ${CROSS_ROOT}/lib/pkgconfig:${PKG_CONFIG_PATH}
-
-RUN apt-get update && apt-get install -y python
-
-ENV NDK android-ndk-r14b
-
-RUN set -ex && \
-    wget -nv https://dl.google.com/android/repository/${NDK}-linux-x86_64.zip && \
-    unzip ${NDK}-linux-x86_64.zip 1>log 2>err && \
-    cd ${NDK} && \
-    ./build/tools/make_standalone_toolchain.py --arch=x86_64 --api=21 --install-dir=${CROSS_ROOT} && \
-    cd /build && mv ${NDK} /usr/
-
-RUN cd ${CROSS_ROOT}/bin && \
-    ln -s ${CROSS_TRIPLE}-gcc ${CROSS_TRIPLE}-cc
 
 ARG BOOST_VERSION
 ARG BOOST_VERSION_FILE
@@ -75,5 +55,3 @@ ENV LT_FLAGS -fPIC -fPIE
 ENV LT_CXXFLAGS -Wno-macro-redefined -Wno-c++11-extensions
 RUN ./build-libtorrent.sh
 RUN ln -s ${CROSS_ROOT}/${CROSS_TRIPLE}/lib64/libgnustl_shared.so ${CROSS_ROOT}/${CROSS_TRIPLE}/lib/libgnustl_shared.so
-
-RUN apt -y remove golang-go
