@@ -191,6 +191,15 @@ pull-all:
 		PLATFORM=$$i $(MAKE) pull; \
 	done
 
+pull-libtorrent:
+	docker pull $(PROJECT)/libtorrent-go:$(PLATFORM)
+	docker tag $(PROJECT)/libtorrent-go:$(PLATFORM) libtorrent-go:$(PLATFORM)
+
+pull-libtorrent-all:
+	for i in $(PLATFORMS); do \
+		PLATFORM=$$i $(MAKE) pull-libtorrent; \
+	done
+
 push:
 	docker tag libtorrent-go:$(PLATFORM) $(PROJECT)/libtorrent-go:$(PLATFORM)
 	docker push $(PROJECT)/libtorrent-go:$(PLATFORM)
