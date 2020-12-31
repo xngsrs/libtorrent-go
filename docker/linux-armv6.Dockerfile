@@ -53,4 +53,5 @@ ENV LT_CC ${CROSS_TRIPLE}-gcc
 ENV LT_CXX ${CROSS_TRIPLE}-g++
 ENV LT_PTHREADS TRUE
 ENV LT_CXXFLAGS -std=c++11 -Wno-psabi
+ENV LT_OPTS CXXFLAGS=-std=c++11
 RUN ./build-libtorrent.sh

@@ -15,6 +15,7 @@
 %template(stdVectorPartialPieceInfo) std::vector<libtorrent::partial_piece_info>;
 %template(stdVectorAnnounceEntry) std::vector<libtorrent::announce_entry>;
 %template(stdVectorTorrentHandle) std::vector<libtorrent::torrent_handle>;
+%template(stdVectorPeerInfo) std::vector<libtorrent::peer_info>;
 
 // Equaler interface
 %rename(Equal) libtorrent::torrent_handle::operator==;

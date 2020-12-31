@@ -21,24 +21,24 @@ PLATFORMS = \
 	darwin-x64 \
 	darwin-x86
 
-BOOST_VERSION = 1.69.0
+BOOST_VERSION = 1.72.0
 BOOST_VERSION_FILE = $(shell echo $(BOOST_VERSION) | sed s/\\./_/g)
-BOOST_SHA256 = 8f32d4617390d1c2d16f26a27ab60d97807b35440d45891fa340fc2648b04406
+# BOOST_SHA256 = 59c9b274bc451cf91a9ba1dd2c7fdcaf5d60b1b3aa83f2c9fa143417cc660722
 
-OPENSSL_VERSION = 1.1.1c
-OPENSSL_SHA256 = f6fb3079ad15076154eda9413fed42877d668e7069d9b87396d0804fdb3f4c90
+OPENSSL_VERSION = 1.1.1f
+# OPENSSL_SHA256 = f6fb3079ad15076154eda9413fed42877d668e7069d9b87396d0804fdb3f4c90
 
-SWIG_VERSION = cb5d7398b562e77436e5766fb17a40bfe8c4f973
+SWIG_VERSION = b6c2438d7d7aac5711376a106a156200b7ff1056
 
-GOLANG_VERSION = 1.13.5
+GOLANG_VERSION = 1.15.4
 GOLANG_SRC_URL = https://golang.org/dl/go$(GOLANG_VERSION).src.tar.gz
-GOLANG_SRC_SHA256 = 27d356e2a0b30d9983b60a788cf225da5f914066b37a6b4f69d457ba55a626ff
+GOLANG_SRC_SHA256 = 063da6a9a4186b8118a0e584532c8c94e65582e2cd951ed078bfd595d27d2367
 
 GOLANG_BOOTSTRAP_VERSION = 1.4-bootstrap-20170531
 GOLANG_BOOTSTRAP_URL = https://dl.google.com/go/go$(GOLANG_BOOTSTRAP_VERSION).tar.gz
 GOLANG_BOOTSTRAP_SHA256 = 49f806f66762077861b7de7081f586995940772d29d4c45068c134441a743fa2
 
-LIBTORRENT_VERSION = 934c75a85794c9cca360fb9b1314c501fa5b76b6
+LIBTORRENT_VERSION = 1.1.14
 
 include platform_host.mk
 
@@ -75,6 +75,8 @@ else ifeq ($(TARGET_OS), darwin)
 	GOOS = darwin
 else ifeq ($(TARGET_OS), linux)
 	GOOS = linux
+	CC = gcc
+	CXX = g++
 else ifeq ($(TARGET_OS), android)
 	GOOS = android
 	ifeq ($(TARGET_ARCH), armv6)
@@ -82,7 +84,7 @@ else ifeq ($(TARGET_OS), android)
 	else
 		GOARM =
 	endif
-	GO_LDFLAGS += -extldflags=-pie
+	GO_LDFLAGS += -flto -extldflags=-pie
 endif
 
 ifneq ($(CROSS_ROOT),)
@@ -106,13 +108,18 @@ else ifeq ($(TARGET_OS), darwin)
 	CC = $(CROSS_ROOT)/bin/$(CROSS_TRIPLE)-clang
 	CXX = $(CROSS_ROOT)/bin/$(CROSS_TRIPLE)-clang++
 	CC_DEFINES += -DSWIGMAC
-	CC_DEFINES += -DBOOST_HAS_PTHREADS
 else ifeq ($(TARGET_OS), android)
 	CC = $(CROSS_ROOT)/bin/$(CROSS_TRIPLE)-clang
 	CXX = $(CROSS_ROOT)/bin/$(CROSS_TRIPLE)-clang++
-	GO_LDFLAGS += -flto=auto
+	GO_LDFLAGS = -flto -extldflags=-pie
+	ifeq ($(TARGET_ARCH), arm64)
+		CC_DEFINES = -DSWIGWORDSIZE64
+	endif
 else ifeq ($(TARGET_OS), linux)
-	GO_LDFLAGS += -flto=auto
+	GO_LDFLAGS += -flto
+	ifeq ($(TARGET_ARCH), arm64)
+		CC_DEFINES = -DSWIGWORDSIZE64
+	endif
 endif
 
 
@@ -148,7 +155,7 @@ clean:
 re: clean build
 
 retest:
-	$(DOCKER) run --rm -v $(GOPATH):/go -v $(shell pwd):/go/src/$(GO_PACKAGE) -w /go/src/$(GO_PACKAGE) -e GOPATH=/go $(PROJECT)/$(DOCKER_IMAGE):linux-x64 make runtest;
+	$(DOCKER) run --rm -v $(GOPATH):/go -v $(shell pwd):/go/src/$(GO_PACKAGE) -w /go/src/$(GO_PACKAGE) -e GOPATH=/go $(DOCKER_IMAGE):linux-armv7 make runtest;
 
 runtest:
 	CC=${CC} CXX=$(CXX) \

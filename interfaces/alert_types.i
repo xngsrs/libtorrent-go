@@ -1,7 +1,7 @@
 %{
 #include <libtorrent/operations.hpp>
 #include <libtorrent/close_reason.hpp>
-#include <libtorrent/alert_types.hpp>
+#include "alert_types.hpp"
 %}
 
 %extend libtorrent::save_resume_data_alert {
@@ -15,4 +15,6 @@
 
 %include <libtorrent/operations.hpp>
 %include <libtorrent/close_reason.hpp>
-%include <libtorrent/alert_types.hpp>
+//alert_type keeps making problems
+%include "alert_types.hpp"
+//%include "alert_types_mod.hpp"

@@ -45,7 +45,7 @@
 %include <libtorrent/session.hpp>
 %include <libtorrent/session_stats.hpp>
 %include <libtorrent/session_status.hpp>
-%include <libtorrent/session_handle.hpp>
+%include "session_handle.hpp"
 
 %extend libtorrent::settings_pack {
   void set_bool(std::string const& name, bool val) {

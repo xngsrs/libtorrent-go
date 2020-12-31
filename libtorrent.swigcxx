@@ -42,26 +42,7 @@
 // #define BOOST_SYSTEM_DECL ""
 // #define BOOST_SYSTEM_NO_DEPRECATED 1
 #define BOOST_SYSTEM_CONSTEXPR
-// #define BOOST_CONSTEXPR
-// #define BOOST_NO_IOSTREAM
-// #define BOOST_SYMBOL_VISIBLE
-// #define BOOST_NOEXCEPT ""
-// #define BOOST_NOEXCEPT_OR_NOTHROW ""
-// #define TORRENT_ABI_VERSION 2
-// #define TORRENT_VERSION_NAMESPACE_2 ""
-// #define TORRENT_VERSION_NAMESPACE_2_END ""
-// #define TORRENT_IPV6_NAMESPACE ""
-// #define TORRENT_IPV6_NAMESPACE_END ""
-// #define TORRENT_CFG "TORRENT_CFG"
-// #define TORRENT_NO_DEPRECATE
-// #define TORRENT_DEPRECATED_EXPORT ""
-// #define TORRENT_DEPRECATED_MEMBER ""
-// #define TORRENT_DEPRECATED_ENUM ""
-// #define TORRENT_DEPRECATED
-// #define TORRENT_EXPORT ""
-// #define TORRENT_EXTRA_EXPORT ""
-// #define TORRENT_FORMAT\(x,y\) ""
-// #define NDEBUG 1
+//#define TORRENT_NO_DEPRECATE
 
 namespace std {
     typedef int time_t;
@@ -89,13 +70,7 @@ namespace libtorrent
     }
 }
 
-%rename("%(camelcase)s", %$isclass) "";
-%rename("%(camelcase)s", %$isvariable) "";
-%rename("%(camelcase)s", %$isenumitem) "";
-%rename("%(camelcase)s", %$isenum) "";
-%rename("%(camelcase)s", %$istemplate) "";
-%rename("%(camelcase)s", %$isfunction) "";
-%rename("%(camelcase)s", %$isnamespace) "";
+%include "interfaces/renames.i"
 
 // These are problematic, ignore them for now
 %ignore libtorrent::throw_invalid_handle;
@@ -159,6 +134,8 @@ namespace libtorrent
 
 %include "interfaces/boost_array.i"
 
+%include "interfaces/exceptions.i"
+
 %include <libtorrent/config.hpp>
 %include <libtorrent/export.hpp>
 %include <libtorrent/version.hpp>
@@ -168,6 +145,7 @@ namespace libtorrent
 
 %include "interfaces/piece_picker.i"
 %include "interfaces/memory_storage.i"
+%include <libtorrent/fingerprint.hpp>
 %include "interfaces/bitfield.i"
 %include "interfaces/socket.i"
 %include <libtorrent/address.hpp>
@@ -181,5 +159,3 @@ namespace libtorrent
 %include "interfaces/alert_types.i"
 %include "interfaces/create_torrent.i"
 %include "interfaces/session.i"
-
-
