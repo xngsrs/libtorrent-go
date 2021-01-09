@@ -11,7 +11,6 @@
 %include <std_pair.i>
 %include <carrays.i>
 
-// %template(stdVectorPeerInfo) std::vector<libtorrent::peer_info>;
 %template(stdVectorPartialPieceInfo) std::vector<libtorrent::partial_piece_info>;
 %template(stdVectorAnnounceEntry) std::vector<libtorrent::announce_entry>;
 %template(stdVectorTorrentHandle) std::vector<libtorrent::torrent_handle>;
@@ -24,6 +23,9 @@
 
 %array_class(libtorrent::block_info, block_info_list);
 
+// Since the refcounter is allocated with libtorrent_info,
+// we can just increase the refcount and return the raw pointer.
+// Once we delete the object, it will also delete the refcounter.
 %extend libtorrent::torrent_handle {
     const libtorrent::torrent_info* torrent_file() {
         return self->torrent_file().get();
@@ -52,7 +54,9 @@
 %ignore libtorrent::partial_piece_info::blocks;
 %ignore libtorrent::hash_value;
 %ignore libtorrent::block_info::peer; // linux_arm
-%ignore libtorrent::block_info::set_peer; // linux_arm
+%ignore libtorrent::block_info::set_peer; // linux_arm 
+//; the error is /usr/arm-linux-gnueabihf/include/libtorrent/torrent_handle.hpp:135: undefined reference to //`boost::asio::ip::address_v4::address_v4(boost::array<unsigned char, 4u> const&)'
+//; /usr/arm-linux-gnueabihf/include/libtorrent/torrent_handle.hpp:132: undefined reference to `boost::asio::ip::address_v6::address_v6(boost::array<unsigned char, 16u> const&, unsigned long)'
 
 %feature("director") torrent_handle;
 %feature("director") torrent_info;
@@ -64,9 +68,3 @@
 %include <libtorrent/torrent_status.hpp>
 #include <libtorrent/torrent.hpp>
 %include <libtorrent/announce_entry.hpp>
-
-// %extend libtorrent::piece_picker {
-//     void remove_piece(int index) {
-//         m_piece_map[index] = libtorrent::piece_pos::piece_open;
-//     }
-// }
